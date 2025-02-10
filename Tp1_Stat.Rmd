@@ -13,7 +13,6 @@ library(ggplot2)
 library(tidyr)
 library(stringr)
 library(dplyr)
-library(readr)
 ```
 
 
@@ -49,127 +48,18 @@ Ce dataset contient les métadonnées de plus de 700 000 films répertoriés dan
 #### Importation des données
 
 ```{r, load-data}
-movies <- read.csv("data/movies.csv")
-print(nrow(movies))
-print( ncol(movies))
+data <- read.csv("data/movies.csv")
+#skim(data)
 ```
 
 #### 2- Exploration des données
 
-```{r}
-# Statistique descriptive
 
-skim(movies)
-```
-
+- Vérification du nombre total d'enregistrements
+- Types de variables présentes
+- Identification des colonnes/attributs
 - Détection des valeurs manquantes
-
-```{r}
-
-sum(is.na(movies))
-
-```
-
-```{r}
-
-# supprimons toutes les liqnes comportant des données manquantes
-
-movies <- na.omit(movies)
-nrow(movies)
-
-```
-
-
-```{r}
-
-#Verifions les films qui sont sortis ou non
-
-# Comptons le nombre de films par statut
-status_counts <- movies %>%
-  group_by(status) %>%
-  summarise(count = n())
-
-print(status_counts)
-
-```
-
-Nous allons supprimer tous les films qui ne sont pas encore sortis, pour eviter les biais dans la suite de nos analyses.
-
-```{r}
-movies_released<-movies%>%
-  filter(status=="Released")
-nrow(movies_released)
-```
-
-**Detection et Traitement de données aberrantes**
-
-```{r}
-# definissons une fonction qui nous permet de determiner les valeurs aberrantes
-
-clean_outliers <- function(data, column_name, k = 1.5) {
-  Q1 <- quantile(data[[column_name]], 0.25, na.rm = TRUE)
-  Q3 <- quantile(data[[column_name]], 0.75, na.rm = TRUE)
-  IQR <- Q3 - Q1
-  lower_bound <- Q1 - k * IQR
-  upper_bound <- Q3 + k * IQR
-
-  clean_data <- data %>% 
-    filter(.[[column_name]] >= lower_bound & .[[column_name]] <= upper_bound)
-
-  return(clean_data)
-}
-
-```
-
-
-Appliquons cette fonction sur certaines de nos variables essentielles a notre analyse
-
-```{r}
-# en appliquant sur budget:
-
-movies_released<- clean_outliers(movies_released, "budget") 
-nrow(movies_released)
-
-```
-
-```{r}
-# En appliquant sur revenu
-
-movies_released <- clean_outliers(movies_released,"revenue")
-nrow(movies_released)
-```
-
-```{r}
-# En appliquant sur runtime
-
-movies_released <- clean_outliers(movies_released,"runtime")
-nrow(movies_released)
-```
-
-```{r}
-# En appliquant sur popularity
-
-movies_released <- clean_outliers(movies_released,"popularity")
-nrow(movies_released)
-```
-
-```{r}
-# En appliquant sur vote_count
-
-movies_released <- clean_outliers(movies_released,"vote_count")
-nrow(movies_released)
-```
-
-Supprimons aussi certaines colonnes comme: poster_path, backdrop_path et recommendations, qui ne nous sont pas utiles. 
-
-```{r}
-# Suppressions des colonnes spécifiées
-movies_clean <- movies_released %>% 
-  select(-poster_path, -backdrop_path, -recommendations)
-head(movies_clean)
-```
-
-
+- Statistiques descriptives initiales
 
 
 #### 3- Analyse descriptive
@@ -179,21 +69,20 @@ Distribution des films par :
 
 - **Année de sortie**
 ```{r movie-year}
-movies_clean$release_date <- as.Date(movies_clean$release_date, format="%Y-%m-%d")
+data$release_date <- as.Date(data$release_date, format="%Y-%m-%d")
 
-movies_clean$release_year <- as.numeric(format(movies_clean$release_date, "%Y"))
+data$release_year <- as.numeric(format(data$release_date, "%Y"))
 
-ggplot(movies_clean, aes(x = release_year)) +
+ggplot(data, aes(x = release_year)) +
   geom_histogram(binwidth = 5, fill="steelblue", color="black") +
   labs(title="Distribution des films par année de sortie", x="Année", y="Nombre de films") +
   theme_minimal()
-
 ```
 
-- **Genre**
 
+- **Genre**
 ```{r movie-genres}
-data_genres <- movies_clean %>%
+data_genres <- data %>%
   filter(!is.na(genres)) %>%
   mutate(genres = str_replace_all(genres, " ", "")) %>%
   separate_rows(genres, sep = ",") %>%
@@ -222,14 +111,37 @@ ggplot(top_genres, aes(x = reorder(genres, n), y = n, fill = genres)) +
 - Pays de production
 - Budget
 - Revenus
+```{r movie-Revenus}
+
+# Définissons 7 seuils de revenu en millions pour avoir une idées de combien de film peuvent atteindre combien de revenue
+revenue_thresholds <- c(1, 5, 10, 20, 50, 100, 500) # En millions
+
+# Dataframe pour quantité de film dépassant chaque seuils
+revenue_counts <- data.frame(
+  Seuil = factor(paste0(revenue_thresholds, "M+"), levels = paste0(revenue_thresholds, "M+")),  # Formater les labels pour affichage graphique
+  Nombre_de_films = sapply(revenue_thresholds * 1e6, function(threshold) sum(data$revenue > threshold, na.rm = TRUE))
+)
+
+
+ggplot(revenue_counts, aes(x = Seuil, y = Nombre_de_films)) +
+  geom_bar(stat="identity", fill="steelblue") +
+  labs(title="Nombre de films dépassant différents seuils de revenu",
+       x="Seuil de revenu (Millions de $)",
+       y="Nombre de films") +
+  theme_minimal()
+```
+
+La première chose que l'on observe c'est que seulement une minorité des films dépassent les 500 millions de revenue. Une nouvelle plus suprenante est qu'environ la moitié des films on un revenu supérieur à 20 millions de $. 
 
 - Analyse des moyennes et médianes importantes
+```{r movie-Ratings}
 
+```
 - **Durée des films**
 
 Après une observation des durées de films, nous remarquons plusieurs choses intéressantes:
 ```{r runtime}
-movies_clean %>% 
+data %>% 
   filter(!is.na(runtime)) %>%
   arrange(desc(runtime)) %>%
   head(10) %>%
@@ -240,7 +152,7 @@ Nous remarquons deux films "troll" qui durent plus de 96 ans chacun, ainsi que d
 Pour l'analyse exploratoire, nous ne tiendrons donc pas compte de ces films.
 
 ```{r runtime-hist}
-runtime_data = movies_clean %>% 
+runtime_data = data %>% 
   filter(!is.na(runtime)) %>%
   filter(runtime < 240) # Limitons-nous à des films de moins de 4h
 
