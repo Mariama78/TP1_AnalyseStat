@@ -104,6 +104,18 @@ nrow(movies_released)
 **Detection et Traitement de données aberrantes**
 
 ```{r}
+# Boîtes à moustaches pour identifier les valeurs aberrantes
+numeric_vars <- sapply(movies_released, is.numeric)
+data_numeric <- movies_released[, numeric_vars]
+lapply(names(data_numeric), function(x) {
+  ggplot(movies_released, aes_string(y = x)) +
+    geom_boxplot(fill = "green", color = "black") +
+    ggtitle(paste("Boxplot de", x))
+})
+```
+
+
+```{r}
 # definissons une fonction qui nous permet de determiner les valeurs aberrantes
 
 clean_outliers <- function(data, column_name, k = 1.5) {
