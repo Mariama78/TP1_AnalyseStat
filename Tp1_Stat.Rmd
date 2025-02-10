@@ -1,0 +1,96 @@
+---
+title: "Travail Pratique 1"
+author: "Equipe A"
+date: "2025-02-10"
+output: html_document
+---
+
+
+### Plan de l'analyse
+
+
+#### 1- Presentation des données
+
+Ce dataset contient les métadonnées de plus de 700 000 films répertoriés dans l’ensemble de données TMDB. Il est mis à jour quotidiennement pour garantir la mise à jour de l’ensemble de données sur les films. Les points de données comprennent les acteurs, l’équipe, les mots-clés de l’intrigue, le budget, les revenus, les affiches, les dates de sortie, les langues, les sociétés de production, les pays, le nombre de votes TMDB et les moyennes des votes, les critiques, les recommandations.
+
+**Description des variables**
+
+- id : Identifiant unique pour chaque film.
+- title : Titre du film.
+- genres : Genres du film, combinés dans une seule chaîne de caractères (ex : Action-Comedy).
+- original_language : Langue originale du film.
+- overview : Résumé ou description du film.
+- popularity : Score de popularité du film.
+- production_companies : Compagnies de production associées au film, listées dans une chaîne de caractères.
+- release_date : Date de sortie du film.
+- budget : Budget du film en dollars.
+- revenue : Revenu généré par le film en dollars.
+- runtime : Durée du film en minutes.
+- status : Statut du film (ex : Released).
+- tagline : Slogan du film.
+- vote_average : Moyenne des votes pour le film.
+- vote_count : Nombre total de votes reçus par le film.
+- credits : Principaux acteurs et membres de l'équipe du film.
+- keywords : Mots-clés associés au film, listés dans une chaîne de caractères.
+- poster_path : Chemin vers l'image de l'affiche du film.
+- backdrop_path : Chemin vers l'image de fond du film.
+- recommendations : Identifiants de films recommandés basés sur ce film, listés dans une chaîne de caractères.
+
+
+#### 2- Exploration des données
+
+
+- Vérification du nombre total d'enregistrements
+- Types de variables présentes
+- Identification des colonnes/attributs
+- Détection des valeurs manquantes
+- Statistiques descriptives initiales
+
+
+#### 3- Analyse descriptive
+
+
+Distribution des films par :
+
+- Année de sortie
+- Genre
+- Pays de production
+- Budget
+- Revenus
+
+- Analyse des moyennes et médianes importantes
+
+
+#### 4-Analyse exploratoire avancée
+
+
+- Corrélations entre variables
+
+
+
+
+#### 5- Visualisation des données
+
+
+**Graphiques de distribution**
+- Histogrammes
+- Diagrammes de dispersion
+- Cartes thermiques de corrélation
+
+
+#### 6- Modélisation prédictive potentielle
+
+
+- Prédiction de succès de films
+
+
+**Chargement des données**
+
+```{r}
+library(skimr)
+data <- read.csv("data/movies.csv")
+#skim(data)
+```
+
+
+
