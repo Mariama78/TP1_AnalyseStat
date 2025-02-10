@@ -179,9 +179,9 @@ Distribution des films par :
 
 - **Année de sortie**
 ```{r movie-year}
-movies_clean$release_date <- as.Date(movies_clean$release_date, format="%Y-%m-%d")
-
-movies_clean$release_year <- as.numeric(format(movies_clean$release_date, "%Y"))
+movies_clean <- movies_clean %>%
+  mutate(release_date = as.Date(release_date, format="%Y-%m-%d"),
+         release_year = as.numeric(format(release_date, "%Y")))
 
 ggplot(movies_clean, aes(x = release_year)) +
   geom_histogram(binwidth = 5, fill="steelblue", color="black") +
