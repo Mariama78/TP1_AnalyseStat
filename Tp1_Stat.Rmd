@@ -8,6 +8,11 @@ output: html_document
 ```{r, load-libraries, echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
 library(skimr)
 library(tidyverse)
+library(ggplot2)
+library(tidyr)
+library(stringr)
+library(dplyr)
+
 ```
 
 
@@ -63,7 +68,46 @@ data <- read.csv("data/movies.csv")
 Distribution des films par :
 
 - Année de sortie
+```{r movie-year}
+data$release_date <- as.Date(data$release_date, format="%Y-%m-%d")
+
+data$release_year <- as.numeric(format(data$release_date, "%Y"))
+
+ggplot(data, aes(x = release_year)) +
+  geom_histogram(binwidth = 5, fill="steelblue", color="black") +
+  labs(title="Distribution des films par année de sortie", x="Année", y="Nombre de films") +
+  theme_minimal()
+
+```
+
 - Genre
+```{r movie-genres}
+data_genres <- data %>%
+  filter(!is.na(genres)) %>%
+  mutate(genres = str_replace_all(genres, " ", "")) %>%
+  separate_rows(genres, sep = ",") %>%
+  count(genres, sort = TRUE)
+
+top_genres <- data_genres %>%
+  slice_max(n, n = 15)
+
+ggplot(top_genres, aes(x = reorder(genres, n), y = n, fill = genres)) +
+  geom_col(show.legend = FALSE) +
+  coord_flip() +
+  labs(
+    title = "Top 15 des Genres de Films les Plus Fréquents",
+    x = "Genre",
+    y = "Nombre de Films"
+  ) +
+  theme_minimal() +
+  theme(
+    text = element_text(size = 14),
+    axis.text.y = element_text(face = "bold"),
+    plot.title = element_text(hjust = 0.5, face = "bold")
+  )
+
+```
+
 - Pays de production
 - Budget
 - Revenus
