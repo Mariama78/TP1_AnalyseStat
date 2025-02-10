@@ -5,9 +5,13 @@ date: "2025-02-10"
 output: html_document
 ---
 
+```{r, load-libraries, echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
+library(skimr)
+library(tidyverse)
+```
+
 
 ### Plan de l'analyse
-
 
 #### 1- Presentation des données
 
@@ -36,6 +40,12 @@ Ce dataset contient les métadonnées de plus de 700 000 films répertoriés dan
 - backdrop_path : Chemin vers l'image de fond du film.
 - recommendations : Identifiants de films recommandés basés sur ce film, listés dans une chaîne de caractères.
 
+#### Importation des données
+
+```{r, load-data}
+data <- read.csv("data/movies.csv")
+#skim(data)
+```
 
 #### 2- Exploration des données
 
@@ -82,15 +92,6 @@ Distribution des films par :
 
 
 - Prédiction de succès de films
-
-
-**Chargement des données**
-
-```{r}
-library(skimr)
-data <- read.csv("data/movies.csv")
-#skim(data)
-```
 
 
 
