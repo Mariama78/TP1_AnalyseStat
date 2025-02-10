@@ -1,6 +1,6 @@
 # TP 1 : Analyse Statistique
 
-*Auteurs:**  
+**Auteurs:**  
 - Emma BRAZ DA COSTA-RAMOS (BRAE21560400)  
 - Gautier BRÈRE (BRIG01040400)  
 - Edward CARAMANOS (CARE17080300)  
