@@ -142,21 +142,21 @@ Appliquons cette fonction sur certaines de nos variables essentielles a notre an
 ```{r}
 # En appliquant sur runtime
 
-movies_released <- clean_outliers(movies_released,"runtime")
+movies_released <- impute_outliers(movies_released,"runtime")
 nrow(movies_released)
 ```
 
 ```{r}
 # En appliquant sur popularity
 
-movies_released <- clean_outliers(movies_released,"popularity")
+movies_released <- impute_outliers(movies_released,"popularity")
 nrow(movies_released)
 ```
 
 ```{r}
 # En appliquant sur vote_count
 
-movies_released <- clean_outliers(movies_released,"vote_count")
+movies_released <- impute_outliers(movies_released,"vote_count")
 nrow(movies_released)
 ```
 
@@ -174,12 +174,13 @@ head(movies_clean)
 Distribution des films par :
 
 - **Année de sortie**
+
 ```{r movie-year}
 movies_clean$release_date <- as.Date(movies_clean$release_date, format="%Y-%m-%d")
 
 movies_clean$release_year <- as.numeric(format(movies_clean$release_date, "%Y"))
 
-ggplot(data, aes(x = release_year)) +
+ggplot(movies_clean, aes(x = release_year)) +
   geom_histogram(binwidth = 5, fill="steelblue", color="black") +
   labs(title="Distribution des films par année de sortie", x="Année", y="Nombre de films") +
   theme_minimal()
@@ -188,7 +189,7 @@ ggplot(data, aes(x = release_year)) +
 -   **Genre**
 
 ```{r movie-genres}
-data_genres <- data %>%
+data_genres <- movies_clean %>%
   filter(!is.na(genres)) %>%
   mutate(genres = str_replace_all(genres, " ", "")) %>%
   separate_rows(genres, sep = ",") %>%
