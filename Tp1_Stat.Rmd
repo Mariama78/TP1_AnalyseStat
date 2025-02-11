@@ -262,7 +262,7 @@ Excluant les reçoivant une note de 0 on note qu'une grande partie des film ont 
 Après une observation des durées de films, nous remarquons plusieurs choses intéressantes:
 
 ```{r runtime}
-data %>% 
+movies_clean %>% 
   filter(!is.na(runtime)) %>%
   arrange(desc(runtime)) %>%
   head(10) %>%
@@ -272,8 +272,7 @@ data %>%
 Nous remarquons deux films "troll" qui durent plus de 96 ans chacun, ainsi que des films expérimentaux comme "Logistics" qui dure 35 jours. Pour l'analyse exploratoire, nous ne tiendrons donc pas compte de ces films.
 
 ```{r runtime-hist}
-runtime_data = data %>% 
-  filter(!is.na(runtime)) %>%
+runtime_data = movies_clean %>% 
   filter(runtime < 240) # Limitons-nous à des films de moins de 4h
 
 ggplot(runtime_data, aes(runtime)) +
@@ -289,7 +288,11 @@ L'histogramme de la durée des films de moins de 4h nous permet d'obtenir plusie
 **Corrélations entre variables :**
 
 ```{r corr-table}
-movies_corr <- cor(runtime_data %>% select_if(is.numeric))
+movies_corr <- cor(
+  movies_clean %>% 
+    filter(runtime < 240) %>% 
+    select_if(is.numeric)
+  )
 
 corrplot(movies_corr, type="upper", tl.col="black", tl.srt=45)
 ```
