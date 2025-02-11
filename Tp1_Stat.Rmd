@@ -303,9 +303,19 @@ Nous observons une faible corrélation positive entre le budget et le revenu, ai
 #### 5- Visualisation des données
 
 **Graphiques de distribution**\
-- Histogrammes\
-- Diagrammes de dispersion\
-- Cartes thermiques de corrélation
+
+Visualisons la relation entre budget et les revenus
+
+```{r}
+ggplot(movies_clean, aes(x = vote_count, y = revenue)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", color = "blue") +
+  labs(title = "Relation entre les votes et les revenus des films", x = "nombre de vote", y = "Revenus")
+
+```
+
+Nous remarquons une tendence générale positive entre le nombre de vote et les revenus. Cela peut suggèrer que les films avec plus de votes ont tendance à générer plus de revenus, ce qui peut indiquer que des films plus populaires ou mieux reçus attirent plus d'audience ou sont mieux monétisés.
+
 
 #### 6- Modélisation prédictive potentielle
 
