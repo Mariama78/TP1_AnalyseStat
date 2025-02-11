@@ -286,8 +286,26 @@ La première chose que l'on observe c'est que seulement une minorité des films 
 -   **Analyse des moyennes et médianes importantes**
 
 ```{r movie-Ratings}
+#Moyenne et médiannes des notes de film
+mean_vote <- mean(movies_clean$vote_average, na.rm = TRUE)
+median_vote <- median(movies_clean$vote_average, na.rm = TRUE)
 
+# Histogramme pour voir la distribution des notes des films
+ggplot(movies_clean, aes(x = vote_average)) +
+  geom_histogram(binwidth = 0.5, fill="steelblue", color="black") +
+  geom_vline(aes(xintercept = mean_vote), color="red", linetype="dashed", size=1, show.legend = TRUE) +
+  geom_vline(aes(xintercept = median_vote), color="green", linetype="dashed", size=1, show.legend = TRUE) +
+  labs(title = "Distribution des notes moyennes des films",
+       x = "Note moyenne",
+       y = "Nombre de films") +
+  theme_minimal() +
+  annotate("text", x = mean_vote + 0.5, y = max(table(movies_clean$vote_average, useNA = "no")) * 0.8, 
+           label = paste("Moyenne:", round(mean_vote, 2)), color = "red") +
+  annotate("text", x = median_vote - 0.5, y = max(table(movies_clean$vote_average, useNA = "no")) * 0.7, 
+           label = paste("Médiane:", round(median_vote, 2)), color = "green")
 ```
+La mojorité des film reçoivent une note de 0.(Peut-être valeur par défaut)
+Excluant les reçoivant une note de 0 on note qu'une grande partie des film ont une note supérieure à 5 et inférieure à 8. En plus de cela une minorité importante de film recoivent une note parfaite de 10/10.
 
 -   **Durée des films**
 
