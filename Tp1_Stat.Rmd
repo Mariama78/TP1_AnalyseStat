@@ -23,48 +23,155 @@ Ce dataset contient les métadonnées de plus de 700 000 films répertoriés dan
 
 **Description des variables**
 
--   id : Identifiant unique pour chaque film.
--   title : Titre du film.
--   genres : Genres du film, combinés dans une seule chaîne de caractères (ex : Action-Comedy).
--   original_language : Langue originale du film.
--   overview : Résumé ou description du film.
--   popularity : Score de popularité du film.
--   production_companies : Compagnies de production associées au film, listées dans une chaîne de caractères.
--   release_date : Date de sortie du film.
--   budget : Budget du film en dollars.
--   revenue : Revenu généré par le film en dollars.
--   runtime : Durée du film en minutes.
--   status : Statut du film (ex : Released).
--   tagline : Slogan du film.
--   vote_average : Moyenne des votes pour le film.
--   vote_count : Nombre total de votes reçus par le film.
--   credits : Principaux acteurs et membres de l'équipe du film.
--   keywords : Mots-clés associés au film, listés dans une chaîne de caractères.
--   poster_path : Chemin vers l'image de l'affiche du film.
--   backdrop_path : Chemin vers l'image de fond du film.
--   recommendations : Identifiants de films recommandés basés sur ce film, listés dans une chaîne de caractères.
+- id : Identifiant unique pour chaque film.
+- title : Titre du film.
+- genres : Genres du film, combinés dans une seule chaîne de caractères (ex : Action-Comedy).
+- original_language : Langue originale du film.
+- overview : Résumé ou description du film.
+- popularity : Score de popularité du film.
+- production_companies : Compagnies de production associées au film, listées dans une chaîne de caractères.
+- release_date : Date de sortie du film.
+- budget : Budget du film en dollars.
+- revenue : Revenu généré par le film en dollars.
+- runtime : Durée du film en minutes.
+- status : Statut du film (ex : Released).
+- tagline : Slogan du film.
+- vote_average : Moyenne des votes pour le film.
+- vote_count : Nombre total de votes reçus par le film.
+- credits : Principaux acteurs et membres de l'équipe du film.
+- keywords : Mots-clés associés au film, listés dans une chaîne de caractères.
+- poster_path : Chemin vers l'image de l'affiche du film.
+- backdrop_path : Chemin vers l'image de fond du film.
+- recommendations : Identifiants de films recommandés basés sur ce film, listés dans une chaîne de caractères.
 
 #### Importation des données
 
 ```{r, load-data}
-data <- read.csv("data/movies.csv")
-#skim(data)
+movies <- read.csv("data/movies.csv")
+print(nrow(movies))
+print( ncol(movies))
 ```
 
 #### 2- Exploration des données
 
--   Vérification du nombre total d'enregistrements
--   Types de variables présentes
--   Identification des colonnes/attributs
--   Détection des valeurs manquantes
--   Statistiques descriptives initiales
+```{r}
+# Statistique descriptive
+
+skim(movies)
+```
+
+- Détection des valeurs manquantes
+
+```{r}
+
+sum(is.na(movies))
+
+```
+
+```{r}
+
+# supprimons toutes les liqnes comportant des données manquantes
+
+movies <- na.omit(movies)
+nrow(movies)
+
+```
+
+
+```{r}
+
+#Verifions les films qui sont sortis ou non
+
+# Comptons le nombre de films par statut
+status_counts <- movies %>%
+  group_by(status) %>%
+  summarise(count = n())
+
+print(status_counts)
+
+```
+
+Nous allons supprimer tous les films qui ne sont pas encore sortis, pour eviter les biais dans la suite de nos analyses.
+
+```{r}
+movies_released<-movies%>%
+  filter(status=="Released")
+nrow(movies_released)
+```
+
+**Detection et Traitement de données aberrantes**
+
+```{r}
+# definissons une fonction qui nous permet de determiner les valeurs aberrantes
+
+clean_outliers <- function(data, column_name, k = 1.5) {
+  Q1 <- quantile(data[[column_name]], 0.25, na.rm = TRUE)
+  Q3 <- quantile(data[[column_name]], 0.75, na.rm = TRUE)
+  IQR <- Q3 - Q1
+  lower_bound <- Q1 - k * IQR
+  upper_bound <- Q3 + k * IQR
+
+  clean_data <- data %>% 
+    filter(.[[column_name]] >= lower_bound & .[[column_name]] <= upper_bound)
+
+  return(clean_data)
+}
+
+```
+
+
+Appliquons cette fonction sur certaines de nos variables essentielles a notre analyse
+
+```{r}
+# en appliquant sur budget:
+
+movies_released<- clean_outliers(movies_released, "budget") 
+nrow(movies_released)
+
+```
+
+```{r}
+# En appliquant sur revenu
+
+movies_released <- clean_outliers(movies_released,"revenue")
+nrow(movies_released)
+```
+
+```{r}
+# En appliquant sur runtime
+
+movies_released <- clean_outliers(movies_released,"runtime")
+nrow(movies_released)
+```
+
+```{r}
+# En appliquant sur popularity
+
+movies_released <- clean_outliers(movies_released,"popularity")
+nrow(movies_released)
+```
+
+```{r}
+# En appliquant sur vote_count
+
+movies_released <- clean_outliers(movies_released,"vote_count")
+nrow(movies_released)
+```
+
+Supprimons aussi certaines colonnes comme: poster_path, backdrop_path et recommendations, qui ne nous sont pas utiles. 
+
+```{r}
+# Suppressions des colonnes spécifiées
+movies_clean <- movies_released %>% 
+  select(-poster_path, -backdrop_path, -recommendations)
+head(movies_clean)
+```
 
 #### 3- Analyse descriptive
 
 Distribution des films par :
 
--   **Année de sortie**
-
+- **Année de sortie**
 ```{r movie-year}
 movies_clean$release_date <- as.Date(movies_clean$release_date, format="%Y-%m-%d")
 
