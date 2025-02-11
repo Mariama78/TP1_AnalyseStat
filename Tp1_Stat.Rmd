@@ -13,9 +13,7 @@ library(ggplot2)
 library(tidyr)
 library(stringr)
 library(dplyr)
-library(readr)
 ```
-
 
 ### Plan de l'analyse
 
@@ -171,11 +169,7 @@ movies_clean <- movies_released %>%
 head(movies_clean)
 ```
 
-
-
-
 #### 3- Analyse descriptive
-
 
 Distribution des films par :
 
@@ -185,17 +179,16 @@ movies_clean$release_date <- as.Date(movies_clean$release_date, format="%Y-%m-%d
 
 movies_clean$release_year <- as.numeric(format(movies_clean$release_date, "%Y"))
 
-ggplot(movies_clean, aes(x = release_year)) +
+ggplot(data, aes(x = release_year)) +
   geom_histogram(binwidth = 5, fill="steelblue", color="black") +
   labs(title="Distribution des films par année de sortie", x="Année", y="Nombre de films") +
   theme_minimal()
-
 ```
 
-- **Genre**
+-   **Genre**
 
 ```{r movie-genres}
-data_genres <- movies_clean %>%
+data_genres <- data %>%
   filter(!is.na(genres)) %>%
   mutate(genres = str_replace_all(genres, " ", "")) %>%
   separate_rows(genres, sep = ",") %>%
@@ -221,28 +214,54 @@ ggplot(top_genres, aes(x = reorder(genres, n), y = n, fill = genres)) +
 
 ```
 
-- Pays de production
-- Budget
-- Revenus
+-   Pays de production
+-   Budget
+-   **Revenus**
 
-- Analyse des moyennes et médianes importantes
+```{r movie-Revenus}
 
-- **Durée des films**
+# Définissons 7 seuils de revenu en millions pour avoir une idées de combien de film peuvent atteindre combien de revenue
+revenue_thresholds <- c(1, 5, 10, 20, 50, 100, 500) # En millions
+
+# Dataframe pour quantité de film dépassant chaque seuils
+revenue_counts <- data.frame(
+  Seuil = factor(paste0(revenue_thresholds, "M+"), levels = paste0(revenue_thresholds, "M+")),  # Formater les labels pour affichage graphique
+  Nombre_de_films = sapply(revenue_thresholds * 1e6, function(threshold) sum(data$revenue > threshold, na.rm = TRUE))
+)
+
+
+ggplot(revenue_counts, aes(x = Seuil, y = Nombre_de_films)) +
+  geom_bar(stat="identity", fill="steelblue") +
+  labs(title="Nombre de films dépassant différents seuils de revenu",
+       x="Seuil de revenu (Millions de $)",
+       y="Nombre de films") +
+  theme_minimal()
+```
+
+La première chose que l'on observe c'est que seulement une minorité des films dépassent les 500 millions de revenue. Une nouvelle plus suprenante est qu'environ la moitié des films on un revenu supérieur à 20 millions de \$.
+
+-   **Analyse des moyennes et médianes importantes**
+
+```{r movie-Ratings}
+
+```
+
+-   **Durée des films**
 
 Après une observation des durées de films, nous remarquons plusieurs choses intéressantes:
+
 ```{r runtime}
-movies_clean %>% 
+data %>% 
   filter(!is.na(runtime)) %>%
   arrange(desc(runtime)) %>%
   head(10) %>%
   select(title, runtime)
 ```
 
-Nous remarquons deux films "troll" qui durent plus de 96 ans chacun, ainsi que des films expérimentaux comme "Logistics" qui dure 35 jours.
-Pour l'analyse exploratoire, nous ne tiendrons donc pas compte de ces films.
+Nous remarquons deux films "troll" qui durent plus de 96 ans chacun, ainsi que des films expérimentaux comme "Logistics" qui dure 35 jours. Pour l'analyse exploratoire, nous ne tiendrons donc pas compte de ces films.
 
 ```{r runtime-hist}
-runtime_data = movies_clean %>% 
+runtime_data = data %>% 
   filter(!is.na(runtime)) %>%
   filter(runtime < 240) # Limitons-nous à des films de moins de 4h
 
@@ -250,9 +269,9 @@ ggplot(runtime_data, aes(runtime)) +
   geom_bar()
 ```
 
-L'histogramme de la durée des films de moins de 4h nous permet d'obtenir plusieurs informations :  
-1. On observe une distinction entre les courts métrages (10 min en moyenne) et des longs métrages (1h30 en moyenne).  
-2. Il existe beaucoup de films dont la durée est nulle: `r runtime_data %>% filter(runtime == 0) %>% count()` au total.  
+L'histogramme de la durée des films de moins de 4h nous permet d'obtenir plusieurs informations :\
+1. On observe une distinction entre les courts métrages (10 min en moyenne) et des longs métrages (1h30 en moyenne).\
+2. Il existe beaucoup de films dont la durée est nulle: `r runtime_data %>% filter(runtime == 0) %>% count()` au total.
 
 #### 4- Analyse exploratoire avancée
 
@@ -264,23 +283,16 @@ movies_corr <- cor(runtime_data %>% select_if(is.numeric))
 corrplot(movies_corr, type="upper", tl.col="black", tl.srt=45)
 ```
 
-Nous observons une relativement forte corrélation entre le revenu des films et le nombre de votes. Cela peut s'expliquer par le fait que plus un film fait d'entrées, plus ses revenus sont élevés et plus de personnes peuvent le noter.  
-Nous observons une faible corrélation positive entre le budget et le revenu, ainsi qu'entre le budget et le nombre de votes.  
-
+Nous observons une relativement forte corrélation entre le revenu des films et le nombre de votes. Cela peut s'expliquer par le fait que plus un film fait d'entrées, plus ses revenus sont élevés et plus de personnes peuvent le noter.\
+Nous observons une faible corrélation positive entre le budget et le revenu, ainsi qu'entre le budget et le nombre de votes.
 
 #### 5- Visualisation des données
 
-
-**Graphiques de distribution**  
-- Histogrammes  
-- Diagrammes de dispersion  
-- Cartes thermiques de corrélation  
-
+**Graphiques de distribution**\
+- Histogrammes\
+- Diagrammes de dispersion\
+- Cartes thermiques de corrélation
 
 #### 6- Modélisation prédictive potentielle
 
-
-- Prédiction de succès de films
-
-
-
+-   Prédiction de succès de films
