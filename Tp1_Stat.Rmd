@@ -215,7 +215,50 @@ ggplot(top_genres, aes(x = reorder(genres, n), y = n, fill = genres)) +
 ```
 
 -   Pays de production
+```{r}
+data_production <- movies_clean %>%
+  filter(!is.na(production_companies) & production_companies != "") %>%
+  mutate(production_companies = str_replace_all(production_companies, "[|]", ",")) %>%  # Remplace les séparateurs
+  separate_rows(production_companies, sep = ",") %>%
+  count(production_companies, sort = TRUE)
+
+top_production <- data_production %>%
+  slice_max(n, n = 15)
+
+ggplot(top_production, aes(x = reorder(production_companies, n), y = n, fill = production_companies)) +
+  geom_col(show.legend = FALSE) +
+  coord_flip() +
+  labs(
+    title = "Top 15 des Compagnies de Production",
+    x = "Compagnie",
+    y = "Nombre de Films"
+  ) +
+  theme_minimal() +
+  theme(
+    text = element_text(size = 14),
+    axis.text.y = element_text(face = "bold"),
+    plot.title = element_text(hjust = 0.5, face = "bold")
+  )
+
+```
+
 -   Budget
+```{r}
+budget_data <- movies_clean %>%
+  filter(!is.na(budget) & budget > 1000)  # Supprime les budgets nuls et très faibles
+
+ggplot(budget_data, aes(x = budget)) +
+  geom_histogram(bins = 30, fill = "steelblue", color = "black") +
+  scale_x_log10(labels = scales::label_number(scale_cut = scales::cut_short_scale())) +  # Nouvelle notation
+  labs(
+    title = "Distribution des Budgets des Films",
+    x = "Budget (échelle logarithmique)",
+    y = "Nombre de Films"
+  ) +
+  theme_minimal()
+
+```
+
 -   **Revenus**
 
 ```{r movie-Revenus}
