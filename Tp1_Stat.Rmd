@@ -103,6 +103,7 @@ nrow(movies_released)
 
 **Detection et Traitement de données aberrantes**
 
+
 ```{r}
 # Boîtes à moustaches pour identifier les valeurs aberrantes
 numeric_vars <- sapply(movies_released, is.numeric)
@@ -116,19 +117,22 @@ lapply(names(data_numeric), function(x) {
 
 
 ```{r}
-# definissons une fonction qui nous permet de determiner les valeurs aberrantes
+# definissons une fonction qui nous permet d'imputer les valeurs aberrantes par la mediane
 
-clean_outliers <- function(data, column_name, k = 1.5) {
-  Q1 <- quantile(data[[column_name]], 0.25, na.rm = TRUE)
-  Q3 <- quantile(data[[column_name]], 0.75, na.rm = TRUE)
+calculate_bounds <- function(data, k = 3) {
+  Q1 <- quantile(data, 0.25, na.rm = TRUE)
+  Q3 <- quantile(data, 0.75, na.rm = TRUE)
   IQR <- Q3 - Q1
   lower_bound <- Q1 - k * IQR
   upper_bound <- Q3 + k * IQR
-
-  clean_data <- data %>% 
-    filter(.[[column_name]] >= lower_bound & .[[column_name]] <= upper_bound)
-
-  return(clean_data)
+  c(lower_bound, upper_bound)
+}
+impute_outliers <- function(data, column_name, k = 1.5) {
+  bounds <- calculate_bounds(data[[column_name]], k)
+  data[[column_name]] <- ifelse(data[[column_name]] < bounds[1] | data[[column_name]] > bounds[2],
+                                median(data[[column_name]], na.rm = TRUE), 
+                                data[[column_name]])
+  data
 }
 
 ```
@@ -136,20 +140,6 @@ clean_outliers <- function(data, column_name, k = 1.5) {
 
 Appliquons cette fonction sur certaines de nos variables essentielles a notre analyse
 
-```{r}
-# en appliquant sur budget:
-
-movies_released<- clean_outliers(movies_released, "budget") 
-nrow(movies_released)
-
-```
-
-```{r}
-# En appliquant sur revenu
-
-movies_released <- clean_outliers(movies_released,"revenue")
-nrow(movies_released)
-```
 
 ```{r}
 # En appliquant sur runtime
