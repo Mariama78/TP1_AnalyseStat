@@ -319,4 +319,20 @@ Nous remarquons une tendence générale positive entre le nombre de vote et les 
 
 #### 6- Modélisation prédictive potentielle
 
--   Prédiction de succès de films
+-   Prédiction de revenue d'un film :
+
+- Régression catégorielle/logistique: Prédiction de la rentabilité
+```{r}
+movies_r <- movies_clean %>%
+  mutate(rentability = ifelse(revenue > budget, 1, 0))
+
+
+glm_rentability <- glm(rentability ~ budget + popularity + vote_average + vote_count, 
+                        data = movies_r, family = binomial)
+summary(glm_rentability)
+```
+
+
+```{r}
+```
+La régression montre que tous les prédicteurs ont un effet significatif sur la rentabilité d’un film, avec des valeurs de p inférieures à 2e-16 pour la plupart des variables. Le nombre de votes influence cette probabilité, chaque vote supplémentaire l’augmentant de 3.38e-03. La moyenne des votes a un impact important indiquant que les films mieux notés sont plus susceptibles d’être rentables. La popularité a également une influence positive suggérant que les films bénéficiant d’une forte visibilité ont de meilleures chances de succès. Le budget a une influence bien plus modeste que les autres facteurs. Avec une déviance résiduelle de 92 136 et un AIC de 92 146, le modèle montre de bonnes capacités prédictives.
