@@ -1305,7 +1305,6 @@ test_movies &lt;- test_movies %&gt;%
   mutate(log_budget = log(budget + 1),
          log_vote_count = log(vote_count + 1))
 
-# régression linéaire multiple :
 lm_vote &lt;- lm(vote_average ~ log_budget + popularity + log_vote_count + release_year, data = train_movies)
 summary(lm_vote)</code></pre>
 <pre><code>## 
