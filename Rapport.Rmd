@@ -265,9 +265,13 @@ movies_r <- clean_movies %>%
          log_budget = log(budget + 1),
          log_vote_count = log(vote_count + 1))
 
-train_test_split <- initial_split(movies_r, prop = 0.8)
-train_movies <- training(train_test_split)
-test_movies <- testing(train_test_split)
+train_movies <- train_movies %>%
+  mutate(rentability = ifelse(revenue > budget, 1, 0),
+         log_budget = log(budget + 1),
+         log_vote_count = log(vote_count + 1))
+
+
+
 
 glm_rentability <- glm(rentability ~ log_budget + popularity + vote_average + log_vote_count + 
                          popularity:vote_average, 
@@ -276,8 +280,13 @@ glm_rentability <- glm(rentability ~ log_budget + popularity + vote_average + lo
 summary(glm_rentability)
 
 ```
-La régression logistique indique que plusieurs facteurs influencent significativement la rentabilité d’un film. En particulier, le budget (p < 2e-16), la  moyenne des votes(p < 1.21e-10) et le nombre de votes (p < 2e-16) sont des prédicteurs clés. Mais, la popularité seule ainsi que son interaction avec la note moyenne ne semblent pas avoir d’impact significatif  Avec une déviance résiduelle de 17 683 et un AIC de 17 695, le modèle suggère que les films bénéficiant d’une forte reconnaissance du public, notamment à travers les votes et les notes, ont plus de chances d’être rentables que ceux misant uniquement sur un budget élevé.
+La régression logistique indique que plusieurs facteurs influencent significativement la rentabilité d’un film. En particulier, le budget (p < 2e-16) et le nombre de votes (p < 2e-16) sont des prédicteurs clés. Mais, la popularité seule ainsi que son interaction avec la note moyenne ne semblent pas avoir d’impact significatif  Avec une déviance résiduelle de 17 683 et un AIC de 17 695, le modèle suggère que les films bénéficiant d’une forte reconnaissance du public, notamment à travers les votes et les notes, ont plus de chances d’être rentables que ceux misant uniquement sur un budget élevé.
 ```{r}
+test_movies <- test_movies %>%
+  mutate(rentability = ifelse(revenue > budget, 1, 0),
+         log_budget = log(budget + 1),
+         log_vote_count = log(vote_count + 1))
+
 test_movies <- test_movies %>%
   mutate(prob_rentable = predict(glm_rentability, newdata = ., type = "response"),
          pred_rentable = ifelse(prob_rentable > 0.5, 1, 0))
