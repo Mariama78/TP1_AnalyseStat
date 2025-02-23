@@ -284,7 +284,6 @@ R² ajusté = 0.4603 : le modèle explique environ 46% de la variabilité des no
 
 
 
-
 Évaluation du modèle :
 ```{r}
 test_movies <- test_movies %>%
