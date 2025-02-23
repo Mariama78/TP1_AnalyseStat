@@ -302,8 +302,6 @@ Le modèle de régression linéaire prédit les notes moyennes des films avec un
 
 
 
-
-
 ```{r}
 movies_r <- clean_movies %>%
   mutate(rentability = ifelse(revenue > budget, 1, 0),
