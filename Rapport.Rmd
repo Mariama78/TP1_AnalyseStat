@@ -1,0 +1,259 @@
+---
+title: "Rapport Travail Pratique N°1"
+author: "Emma BRAZ DA COSTA-RAMOS (BRAE21560400) <br>
+Gautier BRÈRE (BRIG01040400)<br>
+Edward CARAMANOS (CARE17080300) <br>
+Mariama CIRÉ CAMARA (CAMM06609200) <br>
+Yoann CORGNET (CORY14010400)"
+date: "2025-02-10"
+output: html_document
+---
+
+```{r, load-libraries, echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
+library(skimr)
+library(tidyverse)
+library(rsample)
+```
+
+
+## I- Importation et nettoyage des données
+
+Ce dataset contient les métadonnées de plus de 700 000 films répertoriés dans l’ensemble de données TMDB. Il est mis à jour quotidiennement pour garantir la mise à jour de l’ensemble de données sur les films. Les points de données comprennent les acteurs, l’équipe, les mots-clés de l’intrigue, le budget, les revenus, les affiches, les dates de sortie, les langues, les sociétés de production, les pays, le nombre de votes TMDB et les moyennes des votes, les critiques, les recommandations.
+
+**Description des variables**
+
+- id : Identifiant unique pour chaque film.
+- title : Titre du film.
+- genres : Genres du film, combinés dans une seule chaîne de caractères (ex : Action-Comedy).
+- original_language : Langue originale du film.
+- overview : Résumé ou description du film.
+- popularity : Score de popularité du film.
+- production_companies : Compagnies de production associées au film, listées dans une chaîne de caractères.
+- release_date : Date de sortie du film.
+- budget : Budget du film en dollars.
+- revenue : Revenu généré par le film en dollars.
+- runtime : Durée du film en minutes.
+- status : Statut du film (ex : Released).
+- tagline : Slogan du film.
+- vote_average : Moyenne des votes pour le film.
+- vote_count : Nombre total de votes reçus par le film.
+- credits : Principaux acteurs et membres de l'équipe du film.
+- keywords : Mots-clés associés au film, listés dans une chaîne de caractères.
+- poster_path : Chemin vers l'image de l'affiche du film.
+- backdrop_path : Chemin vers l'image de fond du film.
+- recommendations : Identifiants de films recommandés basés sur ce film, listés dans une chaîne de caractères.
+
+### A- Importation des données
+
+```{r, load-data}
+movies <- read.csv("data/movies.csv")
+```
+
+Le dataset compte `r nrow(movies)` entrées pour `r ncol(movies)` variables.
+
+### B- Supression des variables non pertinentes
+
+Voici le résumé des variables du dataset:
+
+```{r variables-details}
+skim(movies)
+```
+
+Pour notre analyse et pour réduire la taille du dataset, nous supprimerons les variables que nous n'utiliserons pas pour notre analyse :
+
+```{r remove-unused-variables}
+clean_movies <- select(movies, -id, -overview, -tagline, -credits, -keywords, -poster_path, -backdrop_path, -recommendations)
+head(clean_movies)
+```
+
+### C- Nettoyage des variables
+
+- **Variable `release_date` :**
+
+Regardons la distribution des dates de sorties :
+
+```{r release_date-distribution, warning=FALSE}
+clean_movies$release_date <- as.Date(clean_movies$release_date, format="%Y-%m-%d")
+
+ggplot(clean_movies, aes(x = release_date)) +
+  geom_histogram(binwidth = 5, fill="steelblue", color="black") +
+  labs(title="Distribution des films par année de sortie", x="Date", y="Nombre de films") +
+  theme_minimal()
+```
+
+On peut observer deux choses :  
+1- Les films ont tendance à sortir à des dates précises durant l'année, nous nous retrouvons donc avec des pics.  
+Pour notre analyse, nous regarderons donc l'année, le mois et la décennie de sortie, et non la date exacte:
+
+```{r clean-release_date}
+# Suppression des dates maquantes
+clean_movies <- clean_movies %>% filter(!is.na(release_date))
+# Ajout des variables
+clean_movies <- clean_movies %>%
+  mutate(
+    release_year = as.numeric(format(release_date, "%Y")),
+    release_mounth = as.numeric(format(release_date, "%m")),
+    release_decate = as.numeric(format(release_date, "%Y")) %/% 10 * 10
+  )
+
+head(clean_movies %>% select(title, release_date, release_year, release_mounth, release_decate))
+```
+
+2- Nous observons que certains films sont sortis après 2025, regardons desquels il s'agit :
+
+```{r movies-after-2025}
+clean_movies %>% filter(release_date > "2025-01-22") %>% select(title, status, release_date) %>% head()
+```
+
+Ce sont donc des films qui ne sont pas encore sortis et dont la date est une prévision.   
+Pour notre analyse, nous nous concentrerons uniquement sur les films sortis:
+
+```{r released-movies, warning=FALSE}
+clean_movies <- clean_movies %>% filter(status == "Released")
+
+ggplot(clean_movies, aes(x = release_year)) +
+  geom_histogram(binwidth = 5, fill="steelblue", color="black") +
+  labs(title="Distribution des films par année de sortie", x="Date", y="Nombre de films") +
+  theme_minimal()
+```
+
+- **Variable `runtime` :**
+
+Après une observation des durées de films, nous remarquons plusieurs choses intéressantes :
+
+```{r runtime}
+clean_movies %>% 
+  filter(!is.na(runtime)) %>%
+  arrange(desc(runtime)) %>%
+  head(10) %>%
+  select(title, runtime)
+```
+
+Nous remarquons deux films "troll" qui durent plus de 96 ans chacun, ainsi que des films expérimentaux comme "Logistics" qui dure 35 jours. Pour notre analyse, nous ne tiendrons donc pas compte de ces films et nous contenterons des films de moins de 4h.
+
+```{r runtime-hist}
+clean_movies = clean_movies %>% 
+  filter(runtime < 240) # Limitons-nous à des films de moins de 4h
+
+ggplot(clean_movies, aes(runtime)) +
+  geom_bar() +
+  labs(title="Distribution des durées de films", x="Durée", y="Nombre de films") +
+  theme_minimal()
+```
+
+L'histogramme de la durée des films de moins de 4h nous permet d'obtenir plusieurs informations :  
+1. On observe une distinction entre les courts métrages (10 min en moyenne) et les longs métrages (1h30 en moyenne).  
+2. Il existe beaucoup de films dont la durée est de zéro: `r clean_movies %>% filter(runtime == 0) %>% count()` au total (soit `r (100 * count(filter(clean_movies, runtime == 0)) / nrow(clean_movies)) %>% round(2)` %).
+
+Afin de ne pas biaiser nos modèles sur des valeurs manquantes/nulles, nous ne tiendrons pas compte des films dont la durée n'est pas renseignée:
+
+```{r remove-runtime-0}
+clean_movies <- clean_movies %>% filter(!is.na(runtime) | runtime > 0)
+
+ggplot(clean_movies, aes(runtime)) +
+  geom_bar() +
+  labs(title="Distribution des durées de films", x="Durée", y="Nombre de films") +
+  theme_minimal()
+```
+
+- **Variable `genres` :**
+
+Le genre des films est stocké sous la forme "genre_principale[-genre_secondaire]...", ce qui fait que nous nous retrouvons avec un total de `r length(distinct(movies, genres)$genres)` genres.
+
+Nous séparerons donc cette variable en `first_gender` et `second_gender`:
+
+```{r clean-genres}
+clean_movies <- clean_movies %>%
+  mutate(
+    first_gender = str_extract(genres, "^[^-]*"),
+    second_gender = ifelse(grepl("-", genres), str_sub(str_extract(genres, "-[^-]+$"), start = 2L), NA)
+  ) %>%
+  select(-genres)
+
+clean_movies <- clean_movies %>%
+  mutate(
+    first_gender = ifelse(first_gender == "", NA, first_gender)
+  )
+
+head(clean_movies %>% select(title, first_gender, second_gender))
+```
+
+Nous nous retrouvons donc avec `r length(distinct(clean_movies, first_gender)$first_gender)` premiers genres et `r length(distinct(clean_movies, second_gender)$second_gender)` seconds genres.
+
+Top 3 des genres principaux :
+```{r first-gender-details}
+clean_movies %>% 
+  filter(!is.na(first_gender)) %>% 
+  count(first_gender) %>% 
+  arrange(desc(n)) %>% 
+  head(n = 3)
+```
+
+Top 3 des genres secondaires :
+```{r second-gender-details}
+clean_movies %>% 
+  filter(!is.na(second_gender)) %>% 
+  count(second_gender) %>% 
+  arrange(desc(n)) %>% 
+  head(n = 3)
+```
+
+- **Variables `vote_count` et `vote_average` :**
+
+```{r vote_average-hist}
+ggplot(clean_movies, aes(x = vote_average)) +
+  geom_histogram(binwidth = 0.5, fill="steelblue", color="black") +
+  labs(
+    title = "Distribution des notes moyennes des films",
+     x = "Note moyenne",
+     y = "Nombre de films"
+  ) + 
+  theme_minimal()
+```
+
+Nous observons que beaucoup de notes sont à zéro, cela peut être dû à deux choses :  
+1- La note du film est de 0  
+2- Le nombre de votes est de zéro, la moyenne est donc automatiquement à zéro. Cela représente `r nrow(filter(clean_movies, vote_average == 0, vote_count == 0))` films sur les `r nrow(filter(clean_movies, vote_average == 0))` qui ont une note de zéro, soit `r (100 * nrow(filter(clean_movies, vote_average == 0, vote_count == 0)) / nrow(filter(clean_movies, vote_average == 0))) %>% round(2)` %.
+
+Nous ne tiendrons donc pas compte de ces films :
+```{r clean-votes}
+clean_movies = clean_movies %>% filter(vote_count != 0)
+
+ggplot(clean_movies, aes(x = vote_average)) +
+  geom_histogram(binwidth = 0.5, fill="steelblue", color="black") +
+  labs(
+    title = "Distribution des notes moyennes des films",
+     x = "Note moyenne",
+     y = "Nombre de films"
+  ) + 
+  theme_minimal()
+```
+
+### D- Rééchantillonnage
+
+Après nettoyage, nous nous retrouvons avec un un dataset de `r nrow(clean_movies)` films.  
+Afin que le traitement des données ne soit pas trop lourd, ni prennent trop de temps, nous prendrons un échantillon de 100 000 films.
+
+```{r 100_000-movies}
+set.seed(42)
+clean_movies <- sample_n(clean_movies, size = 100000)
+```
+
+Voici donc le résumé des variables du dataset après nettoyage :
+```{r clean-variables-details}
+skim(clean_movies)
+```
+
+Pour terminer, nous répartissons notre jeu de données entre l'entraînement et les tests, avec une proportion de 80% :
+
+```{r train-test-split}
+train_test_split <- initial_split(clean_movies, prop = 0.8)
+
+train_movies <- training(train_test_split)
+test_movies <- testing(train_test_split)
+```
+
+
+## II- Visualisation / analyse aprofondie
+
+## III- Modèles de régressions
