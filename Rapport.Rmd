@@ -305,11 +305,16 @@ Ce graphique nous montre clairement l'évolution de l'industrie du cinéma de 18
 
 **-Visualisons la Spécialisation des compagnies par genre**
 ```{r}
+top_companies <- clean_movies %>%
+  count(production_companies, sort = TRUE) %>%
+  top_n(15) 
+
 company_genre_distribution <- clean_movies %>%
+  filter(production_companies %in% top_companies$production_companies) %>%
   group_by(production_companies, genres) %>%
   summarise(count = n(), .groups = 'drop')
 
-ggplot(company_genre_distribution, aes(x = production_companies, y = count, fill = genres)) +
+ggplot(company_genre_distribution, aes(x = reorder(production_companies, -count), y = count, fill = genres)) +
   geom_bar(stat = "identity", position = "fill") +
   coord_flip() +
   labs(title = "Spécialisation des compagnies par genre",
@@ -338,7 +343,7 @@ On observe que une partie non négligeable des films ne sont pas rentable.
 
 **- Voyons l'evolution de la rentabilité**
 ```{r}
-clean_movies <- clean_movies %>%  # Corrige l'affectation
+clean_movies <- clean_movies %>%
   mutate(release_decade = floor(release_year / 10) * 10)
 
 clean_movies <- clean_movies %>% 
