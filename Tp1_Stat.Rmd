@@ -300,6 +300,27 @@ corrplot(movies_corr, type="upper", tl.col="black", tl.srt=45)
 Nous observons une relativement forte corrélation entre le revenu des films et le nombre de votes. Cela peut s'expliquer par le fait que plus un film fait d'entrées, plus ses revenus sont élevés et plus de personnes peuvent le noter.\
 Nous observons une faible corrélation positive entre le budget et le revenu, ainsi qu'entre le budget et le nombre de votes.
 
+**-Visualisons la Spécialisation des compagnies par genre**
+```{r}
+top_companies <- clean_movies %>%
+  count(production_companies, sort = TRUE) %>%
+  top_n(15) 
+
+company_genre_distribution <- clean_movies %>%
+  filter(production_companies %in% top_companies$production_companies) %>%
+  group_by(production_companies, genres) %>%
+  summarise(count = n(), .groups = 'drop')
+
+ggplot(company_genre_distribution, aes(x = reorder(production_companies, -count), y = count, fill = genres)) +
+  geom_bar(stat = "identity", position = "fill") +
+  coord_flip() +
+  labs(title = "Spécialisation des compagnies par genre",
+       x = "Compagnie de production",
+       y = "Proportion de films",
+       fill = "Genre") +
+  theme_minimal()
+```
+
 #### 5- Visualisation des données
 
 **Graphiques de distribution**\

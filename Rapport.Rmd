@@ -338,6 +338,9 @@ On observe que une partie non négligeable des films ne sont pas rentable.
 
 **- Voyons l'evolution de la rentabilité**
 ```{r}
+clean_movies <- clean_movies %>%  # Corrige l'affectation
+  mutate(release_decade = floor(release_year / 10) * 10)
+
 clean_movies <- clean_movies %>% 
   filter(!is.na(budget) & budget > 0 & !is.na(revenue) & revenue > 0) %>%
   mutate(rentability = revenue / budget)
@@ -359,7 +362,7 @@ ggplot(decade_analysis, aes(x = factor(release_decade), y = mean_return)) +
        y = "Retour sur investissement moyen") +
   theme_minimal()
 ```
-La rentabilité des films semble rester stable
+La rentabilité des films semble rester stable à l'exeption de la dernière décénie.
 
 **-Visualisons la relation entre budget et les revenus**
 
