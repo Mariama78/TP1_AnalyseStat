@@ -321,6 +321,27 @@ Nous remarquons une tendence générale positive entre le nombre de vote et les 
 
 -   Prédiction de revenue d'un film :
 
+Régression numérique : Prédiction de la note moyenne (vote_average)
+
+```{r}
+movies_r <- movies_clean %>%
+  filter(vote_average > 0 & budget > 0 & popularity > 0)  # Exclure les valeurs nulles
+
+# Régression linéaire multiple
+lm_vote <- lm(vote_average ~ budget + popularity + vote_count + release_year, data = movies_r)
+summary(lm_vote)
+
+```
+
+Le modèle de régression linéaire vise à prédire la note moyenne vote_average d’un film en fonction de plusieurs variables explicatives comme le budget, la popularité, le nombre de votes et l’année de sortie.
+
+La popularité et le nombre de votes ont un effet positif significatif sur la note moyenne d’un film (p < 0.001).
+L'année de sortie est également significative (p < 0.001), ce qui peut indiquer une évolution des tendances dans la notation des films au fil du temps.
+Le budget, en revanche, a un effet négatif significatif, bien que son impact soit très faible (Estimate = -3.560e-09). Cela pourrait signifier que les films à gros budget ne reçoivent pas nécessairement de meilleures notes.
+Le R^2 ajusté est très faible (0.0227), ce qui suggère que ces variables seules n'expliquent pas bien la variabilité des notes moyennes. D'autres facteurs, comme le scénario, le casting ou la réception critique, pourraient jouer un rôle plus important.
+
+
+
 - Régression catégorielle/logistique: Prédiction de la rentabilité
 ```{r}
 movies_r <- movies_clean %>%

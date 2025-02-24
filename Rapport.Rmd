@@ -13,6 +13,8 @@ output: html_document
 library(skimr)
 library(tidyverse)
 library(rsample)
+library(yardstick)
+library(plotly)
 ```
 
 
@@ -160,43 +162,32 @@ ggplot(clean_movies, aes(runtime)) +
 
 Le genre des films est stocké sous la forme "genre_principale[-genre_secondaire]...", ce qui fait que nous nous retrouvons avec un total de `r length(distinct(movies, genres)$genres)` genres.
 
-Nous séparerons donc cette variable en `first_gender` et `second_gender`:
+Nous allons séparer ces genres, puis compter le nombre de films par genre.
+
 
 ```{r clean-genres}
 clean_movies <- clean_movies %>%
-  mutate(
-    first_gender = str_extract(genres, "^[^-]*"),
-    second_gender = ifelse(grepl("-", genres), str_sub(str_extract(genres, "-[^-]+$"), start = 2L), NA)
-  ) %>%
-  select(-genres)
+  separate_rows(genres, sep = "-")  
 
-clean_movies <- clean_movies %>%
-  mutate(
-    first_gender = ifelse(first_gender == "", NA, first_gender)
-  )
+head(clean_movies%>% select(title,genres))
 
-head(clean_movies %>% select(title, first_gender, second_gender))
 ```
 
-Nous nous retrouvons donc avec `r length(distinct(clean_movies, first_gender)$first_gender)` premiers genres et `r length(distinct(clean_movies, second_gender)$second_gender)` seconds genres.
+
+
+
+Nous nous retrouvons donc avec `r length(distinct(clean_movies, genres)$genres)` genres.
 
 Top 3 des genres principaux :
+
 ```{r first-gender-details}
 clean_movies %>% 
-  filter(!is.na(first_gender)) %>% 
-  count(first_gender) %>% 
+  filter(!is.na(genres)) %>% 
+  count(genres) %>% 
   arrange(desc(n)) %>% 
   head(n = 3)
 ```
 
-Top 3 des genres secondaires :
-```{r second-gender-details}
-clean_movies %>% 
-  filter(!is.na(second_gender)) %>% 
-  count(second_gender) %>% 
-  arrange(desc(n)) %>% 
-  head(n = 3)
-```
 
 - **Variables `vote_count` et `vote_average` :**
 
@@ -256,4 +247,163 @@ test_movies <- testing(train_test_split)
 
 ## II- Visualisation / analyse aprofondie
 
+**-Visualisation de la repartion des genres de films dans nos données**
+
+```{r visualisation-gender}
+# Visualisons la repartion du premier genre des films
+gender_movie<- clean_movies%>%
+  group_by(genres)%>%
+  filter(!is.na(genres)) %>%
+  summarise(count=n(),.groups = 'drop')
+ggplot(gender_movie, aes(x = genres, y = count, fill = genres)) +
+  geom_bar(stat = "identity") +  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  labs(title = "Répartition des genres de films", x = "Genre", y = "Nombre de films")
+```
+
+
+
+En visualisant les répartitions, nous remarquons que les films de genre 'DRAME' sont majoritairement dominants, en suite les Comedies, documentaires, Romance, Thriller..
+
+**- Visualisation du revenu moyen généré par genre de film   **
+
+
+```{r revenu-genre}
+genre_revenue<-clean_movies%>%
+  group_by(genres)%>%
+  summarise(average_revenue=mean(revenue, is.na=TRUE, .groups='drop'))
+ggplot(genre_revenue, aes(x = reorder(genres, average_revenue), y = average_revenue)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +  
+  labs(title = "Revenu moyen par genre de film",
+       x = "Genre",
+       y = "Revenu moyen") +
+  theme_minimal()
+```
+
+D'après cette visualisation, les films d'aventure sont plus rentables tant dis que les films documentaires et Emission TV ne génèrent presque pas de revenu. Cela peut s'expliquer par le fait que ces genres ne soient presque pas diffusés en salle et moins sur les plateformes de distribution, et aussi ils visent un public minoritaire.
+
+**- Voyons l'evolution des genres de film au fil des décennies **
+
+```{r}
+# graphique interactif en barres empilées pour voir l'evolution des tendances
+plot_movies<-clean_movies%>%
+  count(release_decate, genres)
+gg<-ggplot(plot_movies, aes(x = factor(release_decate), y = n, fill = genres)) +
+  geom_bar(stat = "identity", position = "fill") +  
+  scale_y_continuous(labels = scales::percent_format()) +  
+  labs(title = "Évolution des genres de films par décennie",
+       x = "Décennie",
+       y = "Pourcentage de films",
+       fill = "Genre") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+print(ggplotly(gg))
+```
+Ce graphique nous montre clairement l'évolution de l'industrie du cinéma de 1870 à 2020. Nous remarquons que jusqu'en 1880, seulement deux genres de films prédominaient : l'animation et le documentaire. Ce n'est qu'à partir de 1900 que la diversité des genres a commencé à s'accroître. Cela pourrait être dû au progrès de la technologie ou le changement dans le goût du public.
+
+
+**-Visualisons la relation entre budget et les revenus**
+
+Nous allons essayer de voir ici si le revenu généré par un film dépend l'investissement fait dans celui ci. 
+
+```{r}
+ggplot(clean_movies, aes(x = revenue, y =budget )) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", color = "blue") +
+  labs(title = "Relation entre le budget et les revenus des films", x = "Revenu ", y = "Budget")
+```
+
+Ce graphique montre qu'il ya une relation positive entre ces deux variables, cela signifie qu'un grand investissement dans un film génère géneralement un grand revenu mais pas toujours, par exemple ici beaucoups de points sont concentrés dans la partie inferieur du graphe ce qui veut dire que la plus part des films ont un budget et revenu relativement faible . Les points déttachés du lot sont probablement des outliers ou de gros investissements qui ont générés de gros revenus.
+
+
 ## III- Modèles de régressions
+
+Régression numérique : Prédiction de la note moyenne (vote_average)
+
+```{r}
+train_movies <- train_movies %>%
+  mutate(log_budget = log(budget + 1),
+         log_vote_count = log(vote_count + 1))
+
+test_movies <- test_movies %>%
+  mutate(log_budget = log(budget + 1),
+         log_vote_count = log(vote_count + 1))
+
+lm_vote <- lm(vote_average ~ log_budget + popularity + log_vote_count + release_year, data = train_movies)
+summary(lm_vote)
+
+```
+
+Le modèle prédit la note moyenne (vote_average) en fonction de plusieurs variables : budget, popularité, nombre de votes et année de sortie.
+Tous les prédicteurs sont statistiquement significatifs (p < 0.001).
+Le nombre de votes a l’effet le plus fort (Estimate = 1.75), ce qui signifie qu'un film avec plus de votes a tendance à avoir une meilleure note moyenne.
+Le budget et la popularité ont un effet négatif mais faible, suggérant que les films les plus chers et les plus populaires ne sont pas nécessairement les mieux notés.
+L’année de sortie a un effet légèrement positif, ce qui pourrait refléter une évolution des critères de notation au fil du temps.
+R² ajusté = 0.4603 : le modèle explique environ 46% de la variabilité des notes moyennes.
+
+
+
+Évaluation du modèle :
+```{r}
+test_movies <- test_movies %>%
+  mutate(release_year = as.numeric(format(as.Date(release_date), "%Y")),
+         log_budget = log(budget + 1),
+         log_vote_count = log(vote_count + 1))
+
+test_movies <- test_movies %>%
+  mutate(pred_vote_avg = predict(lm_vote, newdata = .))
+
+rmse(test_movies, truth = vote_average, estimate = pred_vote_avg)
+```
+Le modèle de régression linéaire prédit les notes moyennes des films avec une erreur RMSE de 2.36, indiquant une précision modérée. Bien que le modèle explique environ 46% de la variabilité des notes (R² ajusté = 0.4603), l'écart moyen de 2.36 points entre les notes réelles et prédites suggère que d'autres facteurs, comme le scénario ou le casting, influencent également la perception du public.
+
+
+
+
+
+```{r}
+movies_r <- clean_movies %>%
+  mutate(rentability = ifelse(revenue > budget, 1, 0),
+         log_budget = log(budget + 1),
+         log_vote_count = log(vote_count + 1))
+
+train_movies <- train_movies %>%
+  mutate(rentability = ifelse(revenue > budget, 1, 0),
+         log_budget = log(budget + 1),
+         log_vote_count = log(vote_count + 1))
+
+
+
+
+glm_rentability <- glm(rentability ~ log_budget + popularity + vote_average + log_vote_count + 
+                         popularity:vote_average, 
+                        data = train_movies, family = binomial)
+
+summary(glm_rentability)
+
+```
+La régression logistique indique que plusieurs facteurs influencent significativement la rentabilité d’un film. En particulier, le budget (p < 2e-16) et le nombre de votes (p < 2e-16) sont des prédicteurs clés. Mais, la popularité seule ainsi que son interaction avec la note moyenne ne semblent pas avoir d’impact significatif  Avec une déviance résiduelle de 17 683 et un AIC de 17 695, le modèle suggère que les films bénéficiant d’une forte reconnaissance du public, notamment à travers les votes et les notes, ont plus de chances d’être rentables que ceux misant uniquement sur un budget élevé.
+```{r}
+test_movies <- test_movies %>%
+  mutate(rentability = ifelse(revenue > budget, 1, 0),
+         log_budget = log(budget + 1),
+         log_vote_count = log(vote_count + 1))
+
+test_movies <- test_movies %>%
+  mutate(prob_rentable = predict(glm_rentability, newdata = ., type = "response"),
+         pred_rentable = ifelse(prob_rentable > 0.5, 1, 0))
+
+test_movies <- test_movies %>%
+  mutate(
+    rentability = as.factor(rentability),
+    pred_rentable = as.factor(pred_rentable)
+  )
+conf_mat(test_movies, truth = rentability, estimate = pred_rentable)
+
+accuracy(test_movies, truth = rentability, estimate = pred_rentable)
+```
+
+Le modèle fait un peu plus d'erreurs sur les films rentables que sur les non rentables, mais la précision globale reste de 96.47 %, ce qui veut dire que 96,47% des films sont bien classés en tant que rentables ou non rentables.
+
+
