@@ -14,6 +14,7 @@ library(skimr)
 library(tidyverse)
 library(rsample)
 library(yardstick)
+library(plotly)
 ```
 
 
@@ -161,43 +162,32 @@ ggplot(clean_movies, aes(runtime)) +
 
 Le genre des films est stocké sous la forme "genre_principale[-genre_secondaire]...", ce qui fait que nous nous retrouvons avec un total de `r length(distinct(movies, genres)$genres)` genres.
 
-Nous séparerons donc cette variable en `first_gender` et `second_gender`:
+Nous allons séparer ces genres, puis compter le nombre de films par genre.
+
 
 ```{r clean-genres}
 clean_movies <- clean_movies %>%
-  mutate(
-    first_gender = str_extract(genres, "^[^-]*"),
-    second_gender = ifelse(grepl("-", genres), str_sub(str_extract(genres, "-[^-]+$"), start = 2L), NA)
-  ) %>%
-  select(-genres)
+  separate_rows(genres, sep = "-")  
 
-clean_movies <- clean_movies %>%
-  mutate(
-    first_gender = ifelse(first_gender == "", NA, first_gender)
-  )
+head(clean_movies%>% select(title,genres))
 
-head(clean_movies %>% select(title, first_gender, second_gender))
 ```
 
-Nous nous retrouvons donc avec `r length(distinct(clean_movies, first_gender)$first_gender)` premiers genres et `r length(distinct(clean_movies, second_gender)$second_gender)` seconds genres.
+
+
+
+Nous nous retrouvons donc avec `r length(distinct(clean_movies, genres)$genres)` genres.
 
 Top 3 des genres principaux :
+
 ```{r first-gender-details}
 clean_movies %>% 
-  filter(!is.na(first_gender)) %>% 
-  count(first_gender) %>% 
+  filter(!is.na(genres)) %>% 
+  count(genres) %>% 
   arrange(desc(n)) %>% 
   head(n = 3)
 ```
 
-Top 3 des genres secondaires :
-```{r second-gender-details}
-clean_movies %>% 
-  filter(!is.na(second_gender)) %>% 
-  count(second_gender) %>% 
-  arrange(desc(n)) %>% 
-  head(n = 3)
-```
 
 - **Variables `vote_count` et `vote_average` :**
 
@@ -256,6 +246,76 @@ test_movies <- testing(train_test_split)
 
 
 ## II- Visualisation / analyse aprofondie
+
+**-Visualisation de la repartion des genres de films dans nos données**
+
+```{r visualisation-gender}
+# Visualisons la repartion du premier genre des films
+gender_movie<- clean_movies%>%
+  group_by(genres)%>%
+  filter(!is.na(genres)) %>%
+  summarise(count=n(),.groups = 'drop')
+ggplot(gender_movie, aes(x = genres, y = count, fill = genres)) +
+  geom_bar(stat = "identity") +  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  labs(title = "Répartition des genres de films", x = "Genre", y = "Nombre de films")
+```
+
+
+
+En visualisant les répartitions, nous remarquons que les films de genre 'DRAME' sont majoritairement dominants, en suite les Comedies, documentaires, Romance, Thriller..
+
+**- Visualisation du revenu moyen généré par genre de film   **
+
+
+```{r revenu-genre}
+genre_revenue<-clean_movies%>%
+  group_by(genres)%>%
+  summarise(average_revenue=mean(revenue, is.na=TRUE, .groups='drop'))
+ggplot(genre_revenue, aes(x = reorder(genres, average_revenue), y = average_revenue)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +  
+  labs(title = "Revenu moyen par genre de film",
+       x = "Genre",
+       y = "Revenu moyen") +
+  theme_minimal()
+```
+
+D'après cette visualisation, les films d'aventure sont plus rentables tant dis que les films documentaires et Emission TV ne génèrent presque pas de revenu. Cela peut s'expliquer par le fait que ces genres ne soient presque pas diffusés en salle et moins sur les plateformes de distribution, et aussi ils visent un public minoritaire.
+
+**- Voyons l'evolution des genres de film au fil des décennies **
+
+```{r}
+# graphique interactif en barres empilées pour voir l'evolution des tendances
+plot_movies<-clean_movies%>%
+  count(release_decate, genres)
+gg<-ggplot(plot_movies, aes(x = factor(release_decate), y = n, fill = genres)) +
+  geom_bar(stat = "identity", position = "fill") +  
+  scale_y_continuous(labels = scales::percent_format()) +  
+  labs(title = "Évolution des genres de films par décennie",
+       x = "Décennie",
+       y = "Pourcentage de films",
+       fill = "Genre") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+print(ggplotly(gg))
+```
+Ce graphique nous montre clairement l'évolution de l'industrie du cinéma de 1870 à 2020. Nous remarquons que jusqu'en 1880, seulement deux genres de films prédominaient : l'animation et le documentaire. Ce n'est qu'à partir de 1900 que la diversité des genres a commencé à s'accroître. Cela pourrait être dû au progrès de la technologie ou le changement dans le goût du public.
+
+
+**-Visualisons la relation entre budget et les revenus**
+
+Nous allons essayer de voir ici si le revenu généré par un film dépend l'investissement fait dans celui ci. 
+
+```{r}
+ggplot(clean_movies, aes(x = revenue, y =budget )) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", color = "blue") +
+  labs(title = "Relation entre le budget et les revenus des films", x = "Revenu ", y = "Budget")
+```
+
+Ce graphique montre qu'il ya une relation positive entre ces deux variables, cela signifie qu'un grand investissement dans un film génère géneralement un grand revenu mais pas toujours, par exemple ici beaucoups de points sont concentrés dans la partie inferieur du graphe ce qui veut dire que la plus part des films ont un budget et revenu relativement faible . Les points déttachés du lot sont probablement des outliers ou de gros investissements qui ont générés de gros revenus.
+
 
 ## III- Modèles de régressions
 
