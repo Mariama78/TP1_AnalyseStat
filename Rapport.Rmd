@@ -302,6 +302,63 @@ print(ggplotly(gg))
 ```
 Ce graphique nous montre clairement l'évolution de l'industrie du cinéma de 1870 à 2020. Nous remarquons que jusqu'en 1880, seulement deux genres de films prédominaient : l'animation et le documentaire. Ce n'est qu'à partir de 1900 que la diversité des genres a commencé à s'accroître. Cela pourrait être dû au progrès de la technologie ou le changement dans le goût du public.
 
+**-Visualisons la Spécialisation des compagnies par genre**
+```{r}
+company_genre_distribution <- clean_movies %>%
+  group_by(production_companies, genres) %>%
+  summarise(count = n(), .groups = 'drop')
+
+ggplot(company_genre_distribution, aes(x = production_companies, y = count, fill = genres)) +
+  geom_bar(stat = "identity", position = "fill") +
+  coord_flip() +
+  labs(title = "Spécialisation des compagnies par genre",
+       x = "Compagnie de production",
+       y = "Proportion de films",
+       fill = "Genre") +
+  theme_minimal()
+```
+
+**-Visualisons la Rentabilité des films**
+```{r}
+rentability_thresholds <- c(1, 2, 5, 10)
+rentability_categories <- cut(clean_movies$revenue / clean_movies$budget, 
+                              breaks = c(-Inf, 1, 2, 5, 10, Inf), 
+                              labels = c("<1", "1-2X", "2-5X", "5-10X", ">10X"),
+                              right = FALSE)
+
+ggplot(data.frame(Rentabilité = rentability_categories), aes(x = Rentabilité)) +
+  geom_bar(fill = "steelblue") +
+  labs(title = "Distribution de la rentabilité des films",
+       x = "Rentabilité (revenu / budget)",
+       y = "Nombre de films") +
+  theme_minimal()
+```
+On observe que une partie non négligeable des films ne sont pas rentable.
+
+**- Voyons l'evolution de la rentabilité**
+```{r}
+clean_movies <- clean_movies %>% 
+  filter(!is.na(budget) & budget > 0 & !is.na(revenue) & revenue > 0) %>%
+  mutate(rentability = revenue / budget)
+
+decade_analysis <- clean_movies %>%
+  group_by(release_decade) %>%
+  summarise(
+    mean_return = mean(rentability, na.rm = TRUE),
+    mean_revenue = mean(revenue, na.rm = TRUE),
+    top_movies = paste(title[order(-revenue)][1:3], collapse = ", "),
+    top_genres = paste(genres[order(-vote_average)][1:3], collapse = ", "),
+    .groups = 'drop'
+  )
+
+ggplot(decade_analysis, aes(x = factor(release_decade), y = mean_return)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(title = "Rentabilité moyenne des films par décennie",
+       x = "Décennie",
+       y = "Retour sur investissement moyen") +
+  theme_minimal()
+```
+La rentabilité des films semble rester stable
 
 **-Visualisons la relation entre budget et les revenus**
 
