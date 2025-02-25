@@ -477,7 +477,7 @@ glm_rentability <- glm(rentability ~ log_budget + popularity + vote_average + lo
 summary(glm_rentability)
 
 ```
-La régression logistique indique que plusieurs facteurs influencent significativement la rentabilité d’un film. En particulier, le budget (p < 2e-16) et le nombre de votes (p < 2e-16) sont des prédicteurs clés. Mais, la popularité seule ainsi que son interaction avec la note moyenne ne semblent pas avoir d’impact significatif  Avec une déviance résiduelle de 17 683 et un AIC de 17 695, le modèle suggère que les films bénéficiant d’une forte reconnaissance du public, notamment à travers les votes et les notes, ont plus de chances d’être rentables que ceux misant uniquement sur un budget élevé.
+La régression logistique indique que plusieurs facteurs influencent significativement la rentabilité d’un film. En particulier, le budget (p < 2e-16) et le nombre de votes (p < 2e-16) ainsi que la note moyenne sont des prédicteurs clés. Mais, la popularité seule ainsi que son interaction avec la note moyenne ne semblent pas avoir d’impact significatif  Avec une déviance résiduelle de 22 119 et un AIC de 22131, le modèle suggère que les films bénéficiant d’une forte reconnaissance du public, notamment à travers les votes et les notes, ont plus de chances d’être rentables que ceux misant uniquement sur un budget élevé.
 ```{r}
 test_movies <- test_movies %>%
   mutate(rentability = ifelse(revenue > budget, 1, 0),
@@ -498,6 +498,21 @@ conf_mat(test_movies, truth = rentability, estimate = pred_rentable)
 accuracy(test_movies, truth = rentability, estimate = pred_rentable)
 ```
 
-Le modèle fait un peu plus d'erreurs sur les films rentables que sur les non rentables, mais la précision globale reste de 96.47 %, ce qui veut dire que 96,47% des films sont bien classés en tant que rentables ou non rentables.
+Le modèle fait un peu plus d'erreurs sur les films rentables que sur les non rentables, mais la précision globale reste de 95.5 %, ce qui veut dire que 96,5% des films sont bien classés en tant que rentables ou non rentables.
 
 
+
+Courbe ROC pour évaluer la performance de notre modèle:
+
+```{r}
+library(pROC)
+
+
+roc_curve <- roc(test_movies$rentability, test_movies$prob_rentable)
+plot(roc_curve, main = "Courbe ROC")
+
+
+auc_value <- auc(roc_curve)
+print(paste("AUC:", auc_value))
+```
+La courbe ROC montre une bonne séparation entre les classes, et avec une AUC de 0.91, le modèle est performant.Le modèle  classe donc très efficacement les films rentables et non rentables, en plus de la précision élevée.
