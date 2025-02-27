@@ -240,7 +240,7 @@ ggplot(revenue_counts, aes(x = Seuil, y = Nombre_de_films)) +
        y="Nombre de films") +
   theme_minimal()
 ```
-La première chose que l'on observe c'est que seulement une minorité des films dépassent les 500 millions de revenue. Une nouvelle plus suprenante est qu'environ la moitié des films on un revenu supérieur à 20 millions de \$.
+La première chose que l'on observe c'est que seulement une minorité des films dépassent les 500 millions de revenue. Une nouvelle plus suprenante est qu'environ la moitié des films ont un revenu supérieur à 20 millions de \$.
 
 ### D- Rééchantillonnage
 
