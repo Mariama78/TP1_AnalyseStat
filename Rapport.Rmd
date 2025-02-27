@@ -219,6 +219,7 @@ ggplot(clean_movies, aes(x = vote_average)) +
   ) + 
   theme_minimal()
 ```
+On note qu'une grande partie des film ont une note supérieure à 5 et inférieure à 8. En plus de cela une minorité importante  de film (20 000) recoivent une note parfaite de 10/10.
 -   **Revenus**
 
 ```{r movie-Revenus}
