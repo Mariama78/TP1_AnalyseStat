@@ -230,7 +230,7 @@ revenue_thresholds <- c(1, 5, 10, 20, 50, 100, 500) # En millions
 # Dataframe pour quantité de film dépassant chaque seuils
 revenue_counts <- data.frame(
   Seuil = factor(paste0(revenue_thresholds, "M+"), levels = paste0(revenue_thresholds, "M+")),  # Formater les labels pour affichage graphique
-  Nombre_de_films = sapply(revenue_thresholds * 1e6, function(threshold) sum(movies_clean$revenue > threshold, na.rm = TRUE))
+  Nombre_de_films = sapply(revenue_thresholds * 1e6, function(threshold) sum(clean_movies$revenue > threshold, na.rm = TRUE))
 )
 
 
