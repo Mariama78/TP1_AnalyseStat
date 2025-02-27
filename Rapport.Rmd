@@ -323,6 +323,7 @@ ggplot(company_genre_distribution, aes(x = reorder(production_companies, -count)
        fill = "Genre") +
   theme_minimal()
 ```
+Différentes compagnies adopte différente stratégies mais ont peut néanmoins les classer en deux catégories compréhensive et spécialisé. En effet, on remarque Paramout , Warner Bros. Pictures et Universal Pictures ont presque tous les genres de film. Au contraire Queen of Combat , Marvel Studios et DreamWors Animation se concentre sur moins de genres et se spécialise ainsi.
 
 **-Visualisons la Rentabilité des films**
 ```{r}
@@ -339,7 +340,30 @@ ggplot(data.frame(Rentabilité = rentability_categories), aes(x = Rentabilité))
        y = "Nombre de films") +
   theme_minimal()
 ```
-On observe que une partie non négligeable des films ne sont pas rentable.
+On observe que une partie non négligeable des films ne sont pas rentable et très peu de films atteignent des rentabilités élevées (>10X), ce qui montre que les films extrêmement rentables sont rares. Mais une grande partie des films n'ont pas de données exploitables pour le calcul de la rentabilité (catégorie "NA"), refaisont le graphe sans la catégorie "NA" pour voir plus en détail.
+```{r}
+clean_movies_filtered <- clean_movies %>%
+  filter(!is.na(revenue) & !is.na(budget) & budget > 0 & revenue > 0)
+
+rentability_categories_filtered <- cut(clean_movies_filtered$revenue / clean_movies_filtered$budget,
+  breaks = c(-Inf, 1, 2, 5, 10, Inf),
+  labels = c("<1", "1-2X", "2-5X", "5-10X", ">10X"),
+  right = FALSE
+)
+
+# Création du graphique sans les valeurs NA
+ggplot(data.frame(Rentabilité = rentability_categories_filtered), aes(x = Rentabilité)) +
+  geom_bar(fill = "steelblue") +
+  labs(title = "Distribution de la rentabilité des films (sans valeurs manquantes)",
+       x = "Rentabilité (revenu / budget)",
+       y = "Nombre de films") +
+  theme_minimal()
+```
+Ce graphique est simple à comprendre : on voit que les films non rentables (<1) sont les plus nombreux, ce qui signifie que beaucoup de films ne réussissent pas à générer des bénéfices par rapport à leur budget.
+
+Les films ayant une rentabilité entre 2 et 5 fois leur budget représentent une grande partie du total, ce qui montre que la plupart des films arrivent à être rentables.
+
+Enfin, les films extrêmement rentables (>10x) sont très rares, ce qui prouve qu’il est peu fréquent qu’un film gagne beaucoup plus que son budget en revenus.
 
 **- Voyons l'evolution de la rentabilité**
 ```{r}
@@ -358,16 +382,22 @@ decade_analysis <- clean_movies %>%
     top_movies = paste(title[order(-revenue)][1:3], collapse = ", "),
     top_genres = paste(genres[order(-vote_average)][1:3], collapse = ", "),
     .groups = 'drop'
-  )
+  ) %>%
+  filter(release_decade < 2020)  # Exclure la décennie 2020 pour retout pertinant
 
 ggplot(decade_analysis, aes(x = factor(release_decade), y = mean_return)) +
   geom_bar(stat = "identity", fill = "steelblue") +
-  labs(title = "Rentabilité moyenne des films par décennie",
+  labs(title = "Rentabilité moyenne des films par décennie (sans 2020)",
        x = "Décennie",
        y = "Retour sur investissement moyen") +
   theme_minimal()
 ```
-La rentabilité des films semble rester stable à l'exeption de la dernière décénie.
+Ce graphique montre que la rentabilité des films a varié selon les décennies.
+
+De 1910 à 1960, elle reste stable (9x à 17x), avant de bondir dans les années 1970 et 1990 (23x et 27x) avec l’essor des blockbusters.
+Les années 1920 et 1980, possiblement marquées par des crises financières, affichent une faible rentabilité (4x).
+En 2010, la rentabilité chute à nouveau (4x), peut-être en raison de l’essor des plateformes de streaming et de la baisse des entrées en salles.
+Les années 2000 conservent une bonne rentabilité (21x), bien qu’en légère baisse par rapport aux années 1990.
 
 **-Visualisons la relation entre budget et les revenus**
 
