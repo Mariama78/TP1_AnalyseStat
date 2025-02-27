@@ -219,6 +219,28 @@ ggplot(clean_movies, aes(x = vote_average)) +
   ) + 
   theme_minimal()
 ```
+-   **Revenus**
+
+```{r movie-Revenus}
+
+# Définissons 7 seuils de revenu en millions pour avoir une idées de combien de film peuvent atteindre combien de revenue
+revenue_thresholds <- c(1, 5, 10, 20, 50, 100, 500) # En millions
+
+# Dataframe pour quantité de film dépassant chaque seuils
+revenue_counts <- data.frame(
+  Seuil = factor(paste0(revenue_thresholds, "M+"), levels = paste0(revenue_thresholds, "M+")),  # Formater les labels pour affichage graphique
+  Nombre_de_films = sapply(revenue_thresholds * 1e6, function(threshold) sum(movies_clean$revenue > threshold, na.rm = TRUE))
+)
+
+
+ggplot(revenue_counts, aes(x = Seuil, y = Nombre_de_films)) +
+  geom_bar(stat="identity", fill="steelblue") +
+  labs(title="Nombre de films dépassant différents seuils de revenu",
+       x="Seuil de revenu (Millions de $)",
+       y="Nombre de films") +
+  theme_minimal()
+```
+La première chose que l'on observe c'est que seulement une minorité des films dépassent les 500 millions de revenue. Une nouvelle plus suprenante est qu'environ la moitié des films on un revenu supérieur à 20 millions de \$.
 
 ### D- Rééchantillonnage
 
@@ -398,7 +420,27 @@ De 1910 à 1960, elle reste stable (9x à 17x), avant de bondir dans les années
 Les années 1920 et 1980, possiblement marquées par des crises financières, affichent une faible rentabilité (4x).
 En 2010, la rentabilité chute à nouveau (4x), peut-être en raison de l’essor des plateformes de streaming et de la baisse des entrées en salles.
 Les années 2000 conservent une bonne rentabilité (21x), bien qu’en légère baisse par rapport aux années 1990.
+-   **Revenus**
 
+```{r movie-Revenus}
+
+# Définissons 7 seuils de revenu en millions pour avoir une idées de combien de film peuvent atteindre combien de revenue
+revenue_thresholds <- c(1, 5, 10, 20, 50, 100, 500) # En millions
+
+# Dataframe pour quantité de film dépassant chaque seuils
+revenue_counts <- data.frame(
+  Seuil = factor(paste0(revenue_thresholds, "M+"), levels = paste0(revenue_thresholds, "M+")),  # Formater les labels pour affichage graphique
+  Nombre_de_films = sapply(revenue_thresholds * 1e6, function(threshold) sum(movies_clean$revenue > threshold, na.rm = TRUE))
+)
+
+
+ggplot(revenue_counts, aes(x = Seuil, y = Nombre_de_films)) +
+  geom_bar(stat="identity", fill="steelblue") +
+  labs(title="Nombre de films dépassant différents seuils de revenu",
+       x="Seuil de revenu (Millions de $)",
+       y="Nombre de films") +
+  theme_minimal()
+```
 **-Visualisons la relation entre budget et les revenus**
 
 Nous allons essayer de voir ici si le revenu généré par un film dépend l'investissement fait dans celui ci. 
