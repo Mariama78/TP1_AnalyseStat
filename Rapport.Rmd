@@ -325,6 +325,34 @@ gg
 ```
 Ce graphique nous montre clairement l'évolution de l'industrie du cinéma de 1870 à 2020. Nous remarquons que jusqu'en 1880, seulement deux genres de films prédominaient : l'animation et le documentaire. Ce n'est qu'à partir de 1900 que la diversité des genres a commencé à s'accroître. Cela pourrait être dû au progrès de la technologie ou le changement dans le goût du public.
 
+**-Visualisation des genres de films populaires pendant les 5 dernière années**
+
+
+```{r popularity-view}
+# filtrons les données pour n'avoir que les 5 dernières années
+current_year <- as.numeric(format(Sys.Date(), "%Y"))
+year_filtered <- clean_movies %>%
+  filter(release_year >= (current_year - 5))
+
+# Groupons par genre et année, puis calculons la popularité moyenne
+df_summary <- year_filtered %>%
+  group_by(genres, release_year) %>%
+  summarise(avg_popularity = mean(popularity, na.rm = TRUE))
+
+# e graphique
+ggplot(df_summary, aes(x = release_year, y = avg_popularity, color = genres)) +
+  geom_line() +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Popularité des genres de films sur les 5 dernières années",
+       x = "Année de sortie",
+       y = "Popularité moyenne",
+       color = "Genres") +
+  theme(legend.position = "bottom") +
+  scale_x_continuous(breaks = seq(current_year - 5, current_year, by = 1))
+```
+De ce graphe nous remarquons que la popularité est nulle pour tous les genres jusque vers 2022 et  c'est à partir de là que les films d'action ont connu une croissance continue; les films de sciences fiction et d'animation ont connu une forte augmentation de popularité à partir de 2023. D'autres films telques les documentaires, drame, Animation, aventure, sont moyennement croissants.  
+
 **-Visualisons la Spécialisation des compagnies par genre**
 ```{r}
 top_companies <- clean_movies %>%
@@ -346,6 +374,8 @@ ggplot(company_genre_distribution, aes(x = reorder(production_companies, -count)
   theme_minimal()
 ```
 Différentes compagnies adopte différente stratégies mais ont peut néanmoins les classer en deux catégories compréhensive et spécialisé. En effet, on remarque Paramout , Warner Bros. Pictures et Universal Pictures ont presque tous les genres de film. Au contraire Queen of Combat , Marvel Studios et DreamWors Animation se concentre sur moins de genres et se spécialise ainsi.
+
+
 
 **-Visualisons la Rentabilité des films**
 ```{r}
@@ -420,27 +450,8 @@ De 1910 à 1960, elle reste stable (9x à 17x), avant de bondir dans les années
 Les années 1920 et 1980, possiblement marquées par des crises financières, affichent une faible rentabilité (4x).
 En 2010, la rentabilité chute à nouveau (4x), peut-être en raison de l’essor des plateformes de streaming et de la baisse des entrées en salles.
 Les années 2000 conservent une bonne rentabilité (21x), bien qu’en légère baisse par rapport aux années 1990.
--   **Revenus**
-
-```{r movie-Revenus}
-
-# Définissons 7 seuils de revenu en millions pour avoir une idées de combien de film peuvent atteindre combien de revenue
-revenue_thresholds <- c(1, 5, 10, 20, 50, 100, 500) # En millions
-
-# Dataframe pour quantité de film dépassant chaque seuils
-revenue_counts <- data.frame(
-  Seuil = factor(paste0(revenue_thresholds, "M+"), levels = paste0(revenue_thresholds, "M+")),  # Formater les labels pour affichage graphique
-  Nombre_de_films = sapply(revenue_thresholds * 1e6, function(threshold) sum(movies_clean$revenue > threshold, na.rm = TRUE))
-)
 
 
-ggplot(revenue_counts, aes(x = Seuil, y = Nombre_de_films)) +
-  geom_bar(stat="identity", fill="steelblue") +
-  labs(title="Nombre de films dépassant différents seuils de revenu",
-       x="Seuil de revenu (Millions de $)",
-       y="Nombre de films") +
-  theme_minimal()
-```
 **-Visualisons la relation entre budget et les revenus**
 
 Nous allons essayer de voir ici si le revenu généré par un film dépend l'investissement fait dans celui ci. 
@@ -454,34 +465,8 @@ ggplot(clean_movies, aes(x = revenue, y =budget )) +
 
 Ce graphique montre qu'il ya une relation positive entre ces deux variables, cela signifie qu'un grand investissement dans un film génère géneralement un grand revenu mais pas toujours, par exemple ici beaucoups de points sont concentrés dans la partie inferieur du graphe ce qui veut dire que la plus part des films ont un budget et revenu relativement faible . Les points déttachés du lot sont probablement des outliers ou de gros investissements qui ont générés de gros revenus.
 
-**-Visualisation des genres de films populaires pendant les 5 dernière années**
 
 
-```{r popularity-view}
-# filtrons les données pour n'avoir que les 5 dernières années
-current_year <- as.numeric(format(Sys.Date(), "%Y"))
-year_filtered <- clean_movies %>%
-  filter(release_year >= (current_year - 5))
-
-# Groupons par genre et année, puis calculons la popularité moyenne
-df_summary <- year_filtered %>%
-  group_by(genres, release_year) %>%
-  summarise(avg_popularity = mean(popularity, na.rm = TRUE))
-
-# e graphique
-ggplot(df_summary, aes(x = release_year, y = avg_popularity, color = genres)) +
-  geom_line() +
-  geom_point() +
-  theme_minimal() +
-  labs(title = "Popularité des genres de films sur les 5 dernières années",
-       x = "Année de sortie",
-       y = "Popularité moyenne",
-       color = "Genres") +
-  theme(legend.position = "bottom") +
-  scale_x_continuous(breaks = seq(current_year - 5, current_year, by = 1))
-```
-
-De ce graphe nous remarquons que la popularité est nulle pour tous les genres jusque vers 2022 et  c'est à partir de là que les films d'action ont connu une croissance continue; les films de sciences fiction et d'animation ont connu une forte augmentation de popularité à partir de 2023. D'autres films telques les documentaires, drame, Animation, aventure, sont moyennement croissants.  
 
 ## III- Modèles de régressions
 
