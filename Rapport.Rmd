@@ -412,7 +412,7 @@ ggplot(data.frame(Rentabilité = rentability_categories_filtered), aes(x = Renta
        y = "Nombre de films") +
   theme_minimal()
 ```
-Ce graphique est simple à comprendre : on voit que les films non rentables (<1) sont les plus nombreux, ce qui signifie que beaucoup de films ne réussissent pas à générer des bénéfices par rapport à leur budget.
+On voit que les films non rentables (<1) sont les plus nombreux, ce qui signifie que Une part important des films ne réussissent pas à générer des bénéfices par rapport à leur budget.
 
 Les films ayant une rentabilité entre 2 et 5 fois leur budget représentent une grande partie du total, ce qui montre que la plupart des films arrivent à être rentables.
 
