@@ -219,6 +219,29 @@ ggplot(clean_movies, aes(x = vote_average)) +
   ) + 
   theme_minimal()
 ```
+On note qu'une grande partie des film ont une note supérieure à 5 et inférieure à 8. En plus de cela une minorité importante  de film (20 000) recoivent une note parfaite de 10/10.
+-   **Revenus**
+
+```{r movie-Revenus}
+
+# Définissons 7 seuils de revenu en millions pour avoir une idées de combien de film peuvent atteindre combien de revenue
+revenue_thresholds <- c(1, 5, 10, 20, 50, 100, 500) # En millions
+
+# Dataframe pour quantité de film dépassant chaque seuils
+revenue_counts <- data.frame(
+  Seuil = factor(paste0(revenue_thresholds, "M+"), levels = paste0(revenue_thresholds, "M+")),  # Formater les labels pour affichage graphique
+  Nombre_de_films = sapply(revenue_thresholds * 1e6, function(threshold) sum(clean_movies$revenue > threshold, na.rm = TRUE))
+)
+
+
+ggplot(revenue_counts, aes(x = Seuil, y = Nombre_de_films)) +
+  geom_bar(stat="identity", fill="steelblue") +
+  labs(title="Nombre de films dépassant différents seuils de revenu",
+       x="Seuil de revenu (Millions de $)",
+       y="Nombre de films") +
+  theme_minimal()
+```
+La première chose que l'on observe c'est que seulement une minorité des films dépassent les 500 millions de revenue. Une nouvelle plus suprenante est qu'environ la moitié des films ont un revenu supérieur à 20 millions de \$.
 
 ### D- Rééchantillonnage
 
@@ -303,85 +326,6 @@ gg
 ```
 Ce graphique nous montre clairement l'évolution de l'industrie du cinéma de 1870 à 2020. Nous remarquons que jusqu'en 1880, seulement deux genres de films prédominaient : l'animation et le documentaire. Ce n'est qu'à partir de 1900 que la diversité des genres a commencé à s'accroître. Cela pourrait être dû au progrès de la technologie ou le changement dans le goût du public.
 
-**-Visualisons la Spécialisation des compagnies par genre**
-```{r}
-top_companies <- clean_movies %>%
-  count(production_companies, sort = TRUE) %>%
-  top_n(15) 
-
-company_genre_distribution <- clean_movies %>%
-  filter(production_companies %in% top_companies$production_companies) %>%
-  group_by(production_companies, genres) %>%
-  summarise(count = n(), .groups = 'drop')
-
-ggplot(company_genre_distribution, aes(x = reorder(production_companies, -count), y = count, fill = genres)) +
-  geom_bar(stat = "identity", position = "fill") +
-  coord_flip() +
-  labs(title = "Spécialisation des compagnies par genre",
-       x = "Compagnie de production",
-       y = "Proportion de films",
-       fill = "Genre") +
-  theme_minimal()
-```
-
-**-Visualisons la Rentabilité des films**
-```{r}
-rentability_thresholds <- c(1, 2, 5, 10)
-rentability_categories <- cut(clean_movies$revenue / clean_movies$budget, 
-                              breaks = c(-Inf, 1, 2, 5, 10, Inf), 
-                              labels = c("<1", "1-2X", "2-5X", "5-10X", ">10X"),
-                              right = FALSE)
-
-ggplot(data.frame(Rentabilité = rentability_categories), aes(x = Rentabilité)) +
-  geom_bar(fill = "steelblue") +
-  labs(title = "Distribution de la rentabilité des films",
-       x = "Rentabilité (revenu / budget)",
-       y = "Nombre de films") +
-  theme_minimal()
-```
-On observe que une partie non négligeable des films ne sont pas rentable.
-
-**- Voyons l'evolution de la rentabilité**
-```{r}
-clean_movies <- clean_movies %>%
-  mutate(release_decade = floor(release_year / 10) * 10)
-
-clean_movies <- clean_movies %>% 
-  filter(!is.na(budget) & budget > 0 & !is.na(revenue) & revenue > 0) %>%
-  mutate(rentability = revenue / budget)
-
-decade_analysis <- clean_movies %>%
-  group_by(release_decade) %>%
-  summarise(
-    mean_return = mean(rentability, na.rm = TRUE),
-    mean_revenue = mean(revenue, na.rm = TRUE),
-    top_movies = paste(title[order(-revenue)][1:3], collapse = ", "),
-    top_genres = paste(genres[order(-vote_average)][1:3], collapse = ", "),
-    .groups = 'drop'
-  )
-
-ggplot(decade_analysis, aes(x = factor(release_decade), y = mean_return)) +
-  geom_bar(stat = "identity", fill = "steelblue") +
-  labs(title = "Rentabilité moyenne des films par décennie",
-       x = "Décennie",
-       y = "Retour sur investissement moyen") +
-  theme_minimal()
-```
-La rentabilité des films semble rester stable à l'exeption de la dernière décénie.
-
-**-Visualisons la relation entre budget et les revenus**
-
-Nous allons essayer de voir ici si le revenu généré par un film dépend l'investissement fait dans celui ci. 
-
-```{r}
-ggplot(clean_movies, aes(x = revenue, y =budget )) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", color = "blue") +
-  labs(title = "Relation entre le budget et les revenus des films", x = "Revenu ", y = "Budget")
-```
-
-Ce graphique montre qu'il ya une relation positive entre ces deux variables, cela signifie qu'un grand investissement dans un film génère géneralement un grand revenu mais pas toujours, par exemple ici beaucoups de points sont concentrés dans la partie inferieur du graphe ce qui veut dire que la plus part des films ont un budget et revenu relativement faible . Les points déttachés du lot sont probablement des outliers ou de gros investissements qui ont générés de gros revenus.
-
 **-Visualisation des genres de films populaires pendant les 5 dernière années**
 
 
@@ -408,8 +352,122 @@ ggplot(df_summary, aes(x = release_year, y = avg_popularity, color = genres)) +
   theme(legend.position = "bottom") +
   scale_x_continuous(breaks = seq(current_year - 5, current_year, by = 1))
 ```
-
 De ce graphe nous remarquons que la popularité est nulle pour tous les genres jusque vers 2022 et  c'est à partir de là que les films d'action ont connu une croissance continue; les films de sciences fiction et d'animation ont connu une forte augmentation de popularité à partir de 2023. D'autres films telques les documentaires, drame, Animation, aventure, sont moyennement croissants.  
+
+**-Visualisons la Spécialisation des compagnies par genre**
+```{r}
+top_companies <- clean_movies %>%
+  count(production_companies, sort = TRUE) %>%
+  top_n(15) 
+
+company_genre_distribution <- clean_movies %>%
+  filter(production_companies %in% top_companies$production_companies) %>%
+  group_by(production_companies, genres) %>%
+  summarise(count = n(), .groups = 'drop')
+
+ggplot(company_genre_distribution, aes(x = reorder(production_companies, -count), y = count, fill = genres)) +
+  geom_bar(stat = "identity", position = "fill") +
+  coord_flip() +
+  labs(title = "Spécialisation des compagnies par genre",
+       x = "Compagnie de production",
+       y = "Proportion de films",
+       fill = "Genre") +
+  theme_minimal()
+```
+Différentes compagnies adopte différente stratégies mais ont peut néanmoins les classer en deux catégories compréhensive et spécialisé. En effet, on remarque Paramout , Warner Bros. Pictures et Universal Pictures ont presque tous les genres de film. Au contraire Queen of Combat , Marvel Studios et DreamWors Animation se concentre sur moins de genres et se spécialise ainsi.
+
+
+
+**-Visualisons la Rentabilité des films**
+```{r}
+rentability_thresholds <- c(1, 2, 5, 10)
+rentability_categories <- cut(clean_movies$revenue / clean_movies$budget, 
+                              breaks = c(-Inf, 1, 2, 5, 10, Inf), 
+                              labels = c("<1", "1-2X", "2-5X", "5-10X", ">10X"),
+                              right = FALSE)
+
+ggplot(data.frame(Rentabilité = rentability_categories), aes(x = Rentabilité)) +
+  geom_bar(fill = "steelblue") +
+  labs(title = "Distribution de la rentabilité des films",
+       x = "Rentabilité (revenu / budget)",
+       y = "Nombre de films") +
+  theme_minimal()
+```
+On observe que une partie non négligeable des films ne sont pas rentable et très peu de films atteignent des rentabilités élevées (>10X), ce qui montre que les films extrêmement rentables sont rares. Mais une grande partie des films n'ont pas de données exploitables pour le calcul de la rentabilité (catégorie "NA"), refaisont le graphe sans la catégorie "NA" pour voir plus en détail.
+```{r}
+clean_movies_filtered <- clean_movies %>%
+  filter(!is.na(revenue) & !is.na(budget) & budget > 0 & revenue > 0)
+
+rentability_categories_filtered <- cut(clean_movies_filtered$revenue / clean_movies_filtered$budget,
+  breaks = c(-Inf, 1, 2, 5, 10, Inf),
+  labels = c("<1", "1-2X", "2-5X", "5-10X", ">10X"),
+  right = FALSE
+)
+
+# Création du graphique sans les valeurs NA
+ggplot(data.frame(Rentabilité = rentability_categories_filtered), aes(x = Rentabilité)) +
+  geom_bar(fill = "steelblue") +
+  labs(title = "Distribution de la rentabilité des films (sans valeurs manquantes)",
+       x = "Rentabilité (revenu / budget)",
+       y = "Nombre de films") +
+  theme_minimal()
+```
+On voit que les films non rentables (<1) sont les plus nombreux, ce qui signifie que Une part important des films ne réussissent pas à générer des bénéfices par rapport à leur budget.
+
+Les films ayant une rentabilité entre 2 et 5 fois leur budget représentent une grande partie du total, ce qui montre que la plupart des films arrivent à être rentables.
+
+Enfin, les films extrêmement rentables (>10x) sont très rares, ce qui prouve qu’il est peu fréquent qu’un film gagne beaucoup plus que son budget en revenus.
+
+**- Voyons l'evolution de la rentabilité**
+```{r}
+clean_movies <- clean_movies %>%
+  mutate(release_decade = floor(release_year / 10) * 10)
+
+clean_movies <- clean_movies %>% 
+  filter(!is.na(budget) & budget > 0 & !is.na(revenue) & revenue > 0) %>%
+  mutate(rentability = revenue / budget)
+
+decade_analysis <- clean_movies %>%
+  group_by(release_decade) %>%
+  summarise(
+    mean_return = mean(rentability, na.rm = TRUE),
+    mean_revenue = mean(revenue, na.rm = TRUE),
+    top_movies = paste(title[order(-revenue)][1:3], collapse = ", "),
+    top_genres = paste(genres[order(-vote_average)][1:3], collapse = ", "),
+    .groups = 'drop'
+  ) %>%
+  filter(release_decade < 2020)  # Exclure la décennie 2020 pour retout pertinant
+
+ggplot(decade_analysis, aes(x = factor(release_decade), y = mean_return)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(title = "Rentabilité moyenne des films par décennie (sans 2020)",
+       x = "Décennie",
+       y = "Retour sur investissement moyen") +
+  theme_minimal()
+```
+Ce graphique montre que la rentabilité des films a varié selon les décennies.
+
+De 1910 à 1960, elle reste stable (9x à 17x), avant de bondir dans les années 1970 et 1990 (23x et 27x) avec l’essor des blockbusters.
+Les années 1920 et 1980, possiblement marquées par des crises financières, affichent une faible rentabilité (4x).
+En 2010, la rentabilité chute à nouveau (4x), peut-être en raison de l’essor des plateformes de streaming et de la baisse des entrées en salles.
+Les années 2000 conservent une bonne rentabilité (21x), bien qu’en légère baisse par rapport aux années 1990.
+
+
+**-Visualisons la relation entre budget et les revenus**
+
+Nous allons essayer de voir ici si le revenu généré par un film dépend l'investissement fait dans celui ci. 
+
+```{r}
+ggplot(clean_movies, aes(x = revenue, y =budget )) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", color = "blue") +
+  labs(title = "Relation entre le budget et les revenus des films", x = "Revenu ", y = "Budget")
+```
+
+Ce graphique montre qu'il ya une relation positive entre ces deux variables, cela signifie qu'un grand investissement dans un film génère géneralement un grand revenu mais pas toujours, par exemple ici beaucoups de points sont concentrés dans la partie inferieur du graphe ce qui veut dire que la plus part des films ont un budget et revenu relativement faible . Les points déttachés du lot sont probablement des outliers ou de gros investissements qui ont générés de gros revenus.
+
+
+
 
 ## III- Modèles de régressions
 
@@ -477,7 +535,7 @@ glm_rentability <- glm(rentability ~ log_budget + popularity + vote_average + lo
 summary(glm_rentability)
 
 ```
-La régression logistique indique que plusieurs facteurs influencent significativement la rentabilité d’un film. En particulier, le budget (p < 2e-16) et le nombre de votes (p < 2e-16) sont des prédicteurs clés. Mais, la popularité seule ainsi que son interaction avec la note moyenne ne semblent pas avoir d’impact significatif  Avec une déviance résiduelle de 17 683 et un AIC de 17 695, le modèle suggère que les films bénéficiant d’une forte reconnaissance du public, notamment à travers les votes et les notes, ont plus de chances d’être rentables que ceux misant uniquement sur un budget élevé.
+La régression logistique indique que plusieurs facteurs influencent significativement la rentabilité d’un film. En particulier, le budget (p < 2e-16) et le nombre de votes (p < 2e-16) ainsi que la note moyenne sont des prédicteurs clés. Mais, la popularité seule ainsi que son interaction avec la note moyenne ne semblent pas avoir d’impact significatif  Avec une déviance résiduelle de 22 119 et un AIC de 22131, le modèle suggère que les films bénéficiant d’une forte reconnaissance du public, notamment à travers les votes et les notes, ont plus de chances d’être rentables que ceux misant uniquement sur un budget élevé.
 ```{r}
 test_movies <- test_movies %>%
   mutate(rentability = ifelse(revenue > budget, 1, 0),
@@ -498,6 +556,21 @@ conf_mat(test_movies, truth = rentability, estimate = pred_rentable)
 accuracy(test_movies, truth = rentability, estimate = pred_rentable)
 ```
 
-Le modèle fait un peu plus d'erreurs sur les films rentables que sur les non rentables, mais la précision globale reste de 96.47 %, ce qui veut dire que 96,47% des films sont bien classés en tant que rentables ou non rentables.
+Le modèle fait un peu plus d'erreurs sur les films rentables que sur les non rentables, mais la précision globale reste de 95.5 %, ce qui veut dire que 96,5% des films sont bien classés en tant que rentables ou non rentables.
 
 
+
+Courbe ROC pour évaluer la performance de notre modèle:
+
+```{r}
+library(pROC)
+
+
+roc_curve <- roc(test_movies$rentability, test_movies$prob_rentable)
+plot(roc_curve, main = "Courbe ROC")
+
+
+auc_value <- auc(roc_curve)
+print(paste("AUC:", auc_value))
+```
+La courbe ROC montre une bonne séparation entre les classes, et avec une AUC de 0.91, le modèle est performant.Le modèle  classe donc très efficacement les films rentables et non rentables, en plus de la précision élevée.
