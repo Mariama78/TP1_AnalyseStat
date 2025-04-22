@@ -1,0 +1,22 @@
+---
+title: "Rapport Travail Pratique N°2"
+author: "Emma BRAZ DA COSTA-RAMOS (BRAE21560400) <br>
+Gautier BRÈRE (BRIG01040400)<br>
+Edward CARAMANOS (CARE17080300) <br>
+Mariama CIRÉ CAMARA (CAMM06609200) <br>
+Yoann CORGNET (CORY14010400)"
+date: "2025-04-22"
+output: html_document
+---
+
+```{r}
+
+```
+
+
+## 1. Introduction
+
+Dans le cadre de ce travail pratique, nous allons formuler plusieurs hypothèses statistiques à tester sur les données issues du fichier "movies.csv" du site TMDB. Les analyses porteront principalement sur les variables budget, revenue, runtime, popularity, vote_average, vote_count, original_language, et genres.
+
+*Objectif* : Explorer et valider des relations statistiques entre différentes caractéristiques des films, afin de mieux comprendre les facteurs de succès cinématographique.
+
