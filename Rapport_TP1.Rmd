@@ -9,6 +9,10 @@ date: "2025-02-10"
 output: html_document
 ---
 
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, error=FALSE) 
+```
+
 ```{r, load-libraries, echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
 library(skimr)
 library(tidyverse)
@@ -150,7 +154,7 @@ L'histogramme de la durée des films de moins de 4h nous permet d'obtenir plusie
 Afin de ne pas biaiser nos modèles sur des valeurs manquantes/nulles, nous ne tiendrons pas compte des films dont la durée n'est pas renseignée:
 
 ```{r remove-runtime-0}
-clean_movies <- clean_movies %>% filter(!is.na(runtime) | runtime > 0)
+clean_movies <- clean_movies %>% filter(!is.na(runtime) & runtime > 0)
 
 ggplot(clean_movies, aes(runtime)) +
   geom_bar() +
