@@ -19,6 +19,7 @@ library(tidyverse)
 library(rsample)
 library(yardstick)
 library(plotly)
+library(dplyr)
 ```
 
 ## I- Introduction
@@ -182,13 +183,11 @@ Nous allons séparer ces genres, puis compter le nombre de films par genre.
 
 ```{r clean-genres}
 clean_movies <- clean_movies %>%
-  separate_rows(genres, sep = "-")  
+  mutate(genres = gsub("-.*", "", genres))
 
 head(clean_movies%>% select(title,genres))
 
 ```
-
-
 
 
 Nous nous retrouvons donc avec `r length(distinct(clean_movies, genres)$genres)` genres.
@@ -197,7 +196,7 @@ Top 3 des genres principaux :
 
 ```{r first-gender-details}
 clean_movies %>% 
-  filter(!is.na(genres)) %>% 
+  filter(!is.na(genres) & genres != "") %>% 
   count(genres) %>% 
   arrange(desc(n)) %>% 
   head(n = 3)
@@ -234,10 +233,27 @@ ggplot(clean_movies, aes(x = vote_average)) +
   ) + 
   theme_minimal()
 ```
-On note qu'une grande partie des film ont une note supérieure à 5 et inférieure à 8. En plus de cela une minorité importante  de film (20 000) recoivent une note parfaite de 10/10.
--   **Revenus**
+On note qu'une grande partie des film ont une note supérieure à 5 et inférieure à 8. En plus de cela une minorité importante  de film (20 000) recoivent une note parfaite de 10/10.  
 
-```{r movie-Revenus}
+-   **Variable `revenue` :**  
+
+```{r movie-revenus}
+ggplot(clean_movies, aes(revenue)) +
+  geom_histogram(binwidth = 100000000, fill = "skyblue", color = "black") +  # Adjust binwidth as needed
+  labs(title = "Revenu généré par les films",
+       x = "Revenue (in USD)",
+       y = "Nombre de films") +
+  theme_minimal()
+```
+
+On remarque `r (100 * count(filter(clean_movies, revenue == 0)) / nrow(clean_movies)) %>% round(2)` % des films on un revenue de 0, donc non référencé. Supprimons donc ces films.
+
+```{r movie-revenue-clean}
+clean_movies <- clean_movies %>% filter(revenue != 0)
+```
+
+
+```{r movie-revenus-thresholds}
 
 # Définissons 7 seuils de revenu en millions pour avoir une idées de combien de film peuvent atteindre combien de revenue
 revenue_thresholds <- c(1, 5, 10, 20, 50, 100, 500) # En millions
@@ -248,7 +264,6 @@ revenue_counts <- data.frame(
   Nombre_de_films = sapply(revenue_thresholds * 1e6, function(threshold) sum(clean_movies$revenue > threshold, na.rm = TRUE))
 )
 
-
 ggplot(revenue_counts, aes(x = Seuil, y = Nombre_de_films)) +
   geom_bar(stat="identity", fill="steelblue") +
   labs(title="Nombre de films dépassant différents seuils de revenu",
@@ -256,19 +271,13 @@ ggplot(revenue_counts, aes(x = Seuil, y = Nombre_de_films)) +
        y="Nombre de films") +
   theme_minimal()
 ```
+
 La première chose que l'on observe c'est que seulement une minorité des films dépassent les 500 millions de revenue. Une nouvelle plus suprenante est qu'environ la moitié des films ont un revenu supérieur à 20 millions de \$.
 
 ### D- Rééchantillonnage
 
 Après nettoyage, nous nous retrouvons avec un un dataset de `r nrow(clean_movies)` films.  
-Afin que le traitement des données ne soit pas trop lourd, ni prennent trop de temps, nous prendrons un échantillon de 100 000 films.
-
-```{r 100_000-movies}
-set.seed(42)
-clean_movies <- sample_n(clean_movies, size = 100000)
-```
-
-Voici donc le résumé des variables du dataset après nettoyage :
+Et voici le résumé des variables du dataset après nettoyage :
 ```{r clean-variables-details}
 skim(clean_movies)
 ```
@@ -300,4 +309,8 @@ test_movies <- testing(train_test_split)
 ### B- Modèle polynomial ou spline
 
 ### C- Arbre + RandomForest
+
+
+
+
 
