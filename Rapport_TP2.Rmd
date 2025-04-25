@@ -308,9 +308,93 @@ test_movies <- testing(train_test_split)
 
 ### B- Modèle polynomial ou spline
 
-### C- Arbre + RandomForest
+### C- Modèle d'Arbre et RandomForest
 
+#### 1. Variables pour les modèles: 
+```{r movies-df-for-tree}
+rentability_group <- function(revenue, budget) {
+  if (revenue > 10 * budget) {
+    return("HIGH")  # Très rentable
+  } else if (revenue > budget) {
+    return("MEDIUM")  # Moyen
+  } else {
+    return("LOSS")  # Non rentable
+  }
+}
 
+tree_train_movies <- train_movies %>%
+  mutate(
+    rentability = factor(mapply(rentability_group, revenue, budget)),
+    log_budget = log(budget + 1),
+    log_vote_count = log(vote_count + 1)
+  )
 
+tree_test_movies <- test_movies %>%
+  mutate(
+    rentability = factor(mapply(rentability_group, revenue, budget)),
+    log_budget = log(budget + 1),
+    log_vote_count = log(vote_count + 1)
+  )
+
+tree_train_movies %>% count(rentability)
+
+```
+
+#### 2. Entraînement d'un Arbre avec Cross Validation:
+```{r simple-tree-train}
+library(tree)
+tree.movies <- tree(
+  rentability ~ . - revenue,
+  tree_train_movies
+)
+summary(tree.movies)
+```
+
+```{r simple-tree-plot}
+plot(tree.movies)
+text(tree.movies, pretty = 0)
+```
+
+```{r simple-tree-cv}
+cv.movies <- cv.tree(tree.movies)
+plot(cv.movies$size, cv.movies$dev, type = "b")
+```
+
+L'arbre optimal a donc 4 feuilles, nous n'avons donc pas de modification à faire sur cette arbre.  
+Calculons sa performance :
+```{r accuracy}
+tree.pred <- predict(tree.movies, tree_test_movies, type = "class")
+confusion_matrix <- table(tree.pred, tree_test_movies$rentability)
+tree_accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+confusion_matrix
+```
+
+Nous avons donc une précision finale de `r round(tree_accuracy * 100, 2)` % pour ce modèle.
+
+#### 3. Amélioration avec RandomForest :
+
+```{r random-forest}
+library(randomForest)
+set.seed(1)
+
+forest.movie <- randomForest(rentability ~ . - revenue, data = tree_train_movies, importance = TRUE)
+forest.movie
+```
+
+```{r forest-plot}
+plot(tree.movies)
+text(tree.movies, pretty = 0)
+```
+
+**Calcule des performances :**
+```{r forest-accuracy}
+forest.pred <- predict(forest.movie, newdata = tree_test_movies)
+plot(forest.pred, tree_test_movies$rentability)
+abline(0, 1)
+
+forest_accuracy <- sum(forest.pred == tree_test_movies$rentability) / length(tree_test_movies$rentability)
+```
+
+Nous avons donc une précision finale de `r round(forest_accuracy * 100, 2)` % pour ce modèle. Soit une augmentation de `r round((forest_accuracy - tree_accuracy) * 100, 2)` %.
 
 
