@@ -306,7 +306,112 @@ test_movies <- testing(train_test_split)
 
 ### A- Analyse en composante principale
 
-### B- Modèle polynomial ou spline
+
+```{r}
+
+# Sélection des variables numériques pertinentes et suppression des NA
+
+acp_data <- clean_movies %>%
+
+select(budget, revenue, popularity, runtime, vote_average, vote_count) %>%
+
+drop_na()
+
+# standardisation des données
+
+acp_scaled <- scale(acp_data)
+
+# application de l’ACP
+
+res_pca <- prcomp(acp_scaled, center = TRUE, scale. = TRUE)
+
+# affichage de la variance expliquée
+
+summary(res_pca)
+
+```
+
+Les résultats montrent que la première composante principale (PC1) explique environ 43 % de la variance totale, et que les deux premières composantes combinées (PC1 + PC2) en expliquent environ 60 %.
+
+Cela signifie qu’on peut résumer l’essentiel de l’information présente dans les 6 variables d’origine sur seulement deux dimensions, ce qui est utile pour la visualisation et l’exploration.
+
+```{r}
+
+pca_df <- as.data.frame(res_pca$x)
+
+ggplot(pca_df, aes(x = PC1, y = PC2)) +
+
+geom_point(alpha = 0.3, color = "steelblue") +
+
+labs(title = "Projection des films sur les deux premières composantes",
+
+x = "Composante principale 1 (PC1)",
+
+y = "Composante principale 2 (PC2)") +
+
+theme_minimal()
+
+```
+
+Ce graphique montre la projection des films sur les deux premières composantes principales.
+
+On observe une forme en "nuage" dense qui révèle une grande concentration de films aux caractéristiques similaires (ex. budget et revenu modérés), ainsi que des films plus éloignés (très hauts budgets ou revenus) qui apparaissent sur les bords.
+
+Cela permet d'identifier visuellement des groupes de films similaires selon leurs caractéristiques numériques principales.
+
+### B- Modèle polynomial 
+
+```{r}
+
+# modèle polynomial de degré 2 :
+
+poly_model <- lm(revenue ~ poly(budget, 2), data = train_movies)
+
+# résumé du modèle
+
+summary(poly_model)
+
+```
+
+Le modèle polynomial de degré 2 est significatif (p-value < 2e-16) pour l'ensemble.
+
+Les deux coefficients du polynôme sont également significatifs.
+
+Le R² de 0,5842 montre que ce modèle explique environ 58 % de la variance du revenu à partir du budget, ce qui est une nette amélioration par rapport à une simple régression linéaire.
+
+```{r}
+
+test_movies <- test_movies %>%
+
+mutate(pred_poly_revenue = predict(poly_model, newdata = test_movies))
+
+```
+
+```{r}
+
+ggplot(test_movies, aes(x = budget, y = revenue)) +
+
+geom_point(alpha = 0.3, color = "grey") +
+
+geom_line(aes(y = pred_poly_revenue), color = "red", size = 1.2) +
+
+labs(title = "Modèle polynomial : prédiction du revenu à partir du budget",
+
+x = "Budget",
+
+y = "Revenu prédit") +
+
+theme_minimal()
+
+```
+
+La courbe rouge montre l'ajustement du modèle polynomial sur les données de test.
+
+On observe une relation croissante et courbée : les films à gros budget génèrent en moyenne plus de revenus, mais la relation n’est pas strictement proportionnelle.
+
+Ce modèle permet donc de mieux capter la réalité du phénomène qu’une droite simple.
+
+
 
 ### C- Modèle d'Arbre et RandomForest
 
