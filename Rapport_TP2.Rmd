@@ -299,6 +299,49 @@ test_movies <- testing(train_test_split)
 
 ### C- Hypthèse 3: Popularité et rentabilité
 
+Hypothèses :
+
+H0 : La rentabilité dépend uniquement de la popularité du film.
+
+H1 : La rentabilité dépend davantage d'autres facteurs que de la seule popularité.
+
+```{r train-test-split}
+
+df <- clean_movies
+
+df_rf <- df %>%
+  select(revenue, budget, popularity, runtime, vote_average, vote_count) %>%
+  filter(revenue > 0, budget > 0) %>%
+  na.omit()
+
+set.seed(42)
+model_rf <- randomForest(revenue ~ ., data = df_rf, importance = TRUE)
+
+importance(model_rf)
+
+```
+Le budget est le facteur le plus influent sur le revenu.
+
+La popularité a un impact modéré, moins important que le budget et le vote count.
+
+```{r}
+imp <- as.data.frame(importance(model_rf))
+imp$Variable <- rownames(imp)
+
+ggplot(imp, aes(x = reorder(Variable, `%IncMSE`), y = `%IncMSE`)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(
+    title = "Importance des variables (Random Forest)",
+    x = "Variable",
+    y = "% d'augmentation de l'erreur MSE"
+  ) +
+  theme_minimal()
+
+```
+L'analyse des importances des variables montre que la popularité n'est pas le facteur principal pour prédire le revenu ; des variables comme le budget et le nombre de votes sont plus déterminantes.
+Cela rejette H0 et confirme H1 : la rentabilité ne dépend pas uniquement de la popularité.
+
 ### D- Hypthèse 4: Au choix
 
 
