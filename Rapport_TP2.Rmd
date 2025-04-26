@@ -306,18 +306,19 @@ H0 : La rentabilité dépend uniquement de la popularité du film.
 H1 : La rentabilité dépend davantage d'autres facteurs que de la seule popularité.
 
 ```{r train-test-split}
+library(tidyverse)
+library(randomForest)
 
-df <- clean_movies
-
-df_rf <- df %>%
-  select(revenue, budget, popularity, runtime, vote_average, vote_count) %>%
+df <- clean_movies %>%
   filter(revenue > 0, budget > 0) %>%
+  mutate(rentabilite = revenue / budget) %>%
+  select(rentabilite, budget, popularity, runtime, vote_average, vote_count) %>%
   na.omit()
 
 set.seed(42)
-model_rf <- randomForest(revenue ~ ., data = df_rf, importance = TRUE)
+model_rf_rent <- randomForest(rentabilite ~ ., data = df, importance = TRUE)
 
-importance(model_rf)
+importance(model_rf_rent)
 
 ```
 Le budget est le facteur le plus influent sur le revenu.
@@ -342,8 +343,34 @@ ggplot(imp, aes(x = reorder(Variable, `%IncMSE`), y = `%IncMSE`)) +
 L'analyse des importances des variables montre que la popularité n'est pas le facteur principal pour prédire le revenu ; des variables comme le budget et le nombre de votes sont plus déterminantes.
 Cela rejette H0 et confirme H1 : la rentabilité ne dépend pas uniquement de la popularité.
 
-### D- Hypthèse 4: Au choix
+### D- Hypthèse 4: La durée d’un film influence sa popularité
 
+Hypothèses :
+H0 : La durée d'un film (runtime) n'a pas d'effet significatif sur sa popularité.
+
+H1 : La durée d'un film (runtime) a un effet significatif sur sa popularité.
+
+```{r}
+imp <- as.data.frame(importance(model_rf))
+imp$Variable <- rownames(imp)
+
+ggplot(imp, aes(x = reorder(Variable, `%IncMSE`), y = `%IncMSE`)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(
+    title = "Importance des variables (Random Forest)",
+    x = "Variable",
+    y = "% d'augmentation de l'erreur MSE"
+  ) +
+  theme_minimal()
+
+```
+
+La variable runtime a une faible importance dans la Random Forest.
+
+La durée d’un film n’influence pas significativement la popularité.
+
+H0 est supportée : runtime n'est pas un facteur déterminant.
 
 ## IV- Modèles de prédiction de la rentabilité 
 
