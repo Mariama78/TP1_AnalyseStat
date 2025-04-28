@@ -295,7 +295,108 @@ test_movies <- testing(train_test_split)
 
 ### A- Hypthèse 1: Films en anglais et revenu
 
+- H0 : Les films en anglais ne génèrent pas plus de revenus que les films dans d'autres langues.
+- H1 : Les films en anglais génèrent plus de revenus.
+
+```{r english-movies}
+
+# Groupons d'abord les langues de films en deux catégories: films anglais et non-anglais
+
+clean_movies$english_film <- ifelse(clean_movies$original_language == "en", "English", "Non-English")
+
+# Visualisation des films en anglais
+
+boxplot(revenue ~ english_film, data = clean_movies, main = "Revenue by Language", ylab = "Revenue", xlab = "Language")
+
+```
+
+nous allons maintenant apppliquer lest-t à nos deux groupes de films
+
+
+```{r}
+
+# Appliquons un test t pour deux groupes
+t_test_result <- t.test(revenue ~ english_film, data = clean_movies, alternative = "greater")  
+
+# Afficher le résultat du test
+print(t_test_result)
+
+```
+D'après ce test, p-value< 2.2e-16 (extrêmement petite) donc on rejette l'hypothèse nulle (H0). L'alternative hypothesis nous confirme que "le revenu moyen des films en anglais est supérieur à celui des films non-anglais" avec une intervalle de confiance de 95%. Nous conclurons que les films anglophones génèrent significativement plus de revenus que les autres. 
+
+
 ### B- Hypthèse 2: Regroupement naturel des films basé sur `budget`, `revenue`, `popularity`
+
+- H0 : Il n'existe aucun regroupement naturel des films basé sur budget, revenue, popularity.
+-	H1 : Il existe des clusters naturels de films.
+
+```{r clusters}
+
+# selection des variables qui nous interressent
+
+movies_cluster <- clean_movies[, c("budget", "revenue", "popularity")]
+
+# Standardisation
+
+movies_scaled <- scale(movies_cluster)
+```
+
+Nous allons utiliser la methode de coude pour déterminer le nombre de cluster
+
+```{r}
+
+wss <- numeric(10)
+for (k in 1:10) {
+  kmeans_model <- kmeans(movies_scaled, centers = k, nstart = 10)
+  wss[k] <- kmeans_model$tot.withinss
+}
+
+# Tracer la méthode du coude
+plot(1:10, wss, type = "b", pch = 19, frame = FALSE,
+     xlab = "Nombre de clusters k",
+     ylab = "Somme intra-classe (WSS)",
+     main = "Méthode du coude pour choisir k")
+```
+
+Ici le "coude" se situe à k = 4, ce qui suggère que 4 clusters sont naturels pour regrouper les films selon budget, revenue et popularity.
+
+
+```{r}
+# Pour k = 4 clusters
+
+set.seed(123)
+kmeans_final <- kmeans(movies_scaled, centers = 4, nstart = 25)
+
+# Affichage de la répartition des films dans chaque cluster
+
+table(kmeans_final$cluster)
+
+
+```
+
+
+```{r}
+
+movies_cluster$cluster <- as.factor(kmeans_final$cluster)
+
+# nous allons visualiser les clusters en utilisant deux variables : budget vs revenue
+ggplot(movies_cluster, aes(x = budget, y = revenue, color = cluster)) +
+  geom_point(alpha = 0.7, size = 2) +
+  scale_x_log10() + scale_y_log10() + 
+  labs(title = "Répartition des films par cluster",
+       x = "Budget (log10)",
+       y = "Revenue (log10)",
+       color = "Cluster") +
+  theme_minimal()
+```
+
+Dans cette representation nous voyons principalement les clusters 2,3,4.
+
+- Le cluster 4 contient la majorité des films, principalement des films à faible et moyenne budjet et revenu.
+- Les clusters 2 et 3 contiennent des films à budget et revenu élévé , mais en nombre beaucoup plus faible.
+- Le cluster 1 ne contient pas assez de films (13) ce qui fait qu'il n'est pas visible dans le graphe.
+
+*En conclusion*, nous rejetons l'hypothèse nulle H0 et acceptons l'hypothèse H1, car la méthode du coude (k = 4) et la visualisation des clusters indiquent clairement l'existence de regroupements naturels parmi les films basés sur leur budget, leur revenu et leur popularité.
 
 ### C- Hypthèse 3: Popularité et rentabilité
 
@@ -305,7 +406,7 @@ H0 : La rentabilité dépend uniquement de la popularité du film.
 
 H1 : La rentabilité dépend davantage d'autres facteurs que de la seule popularité.
 
-```{r train-test-split}
+```{r }
 library(tidyverse)
 library(randomForest)
 
@@ -340,6 +441,7 @@ ggplot(imp, aes(x = reorder(Variable, `%IncMSE`), y = `%IncMSE`)) +
   theme_minimal()
 
 ```
+
 L'analyse des importances des variables montre que la popularité n'est pas le facteur principal pour prédire le revenu ; des variables comme le budget et le nombre de votes sont plus déterminantes.
 Cela rejette H0 et confirme H1 : la rentabilité ne dépend pas uniquement de la popularité.
 
