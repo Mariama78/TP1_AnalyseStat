@@ -419,7 +419,7 @@ df <- clean_movies %>%
 set.seed(42)
 model_rf_rent <- randomForest(rentabilite ~ ., data = df, importance = TRUE)
 
-importance(model_rf_rent)
+# importance(model_rf_rent)
 
 ```
 Le budget est le facteur le plus influent sur le revenu.
@@ -427,7 +427,7 @@ Le budget est le facteur le plus influent sur le revenu.
 La popularité a un impact modéré, moins important que le budget et le vote count.
 
 ```{r}
-imp <- as.data.frame(importance(model_rf))
+imp <- as.data.frame(importance(model_rf_rent))
 imp$Variable <- rownames(imp)
 
 ggplot(imp, aes(x = reorder(Variable, `%IncMSE`), y = `%IncMSE`)) +
@@ -453,7 +453,7 @@ H0 : La durée d'un film (runtime) n'a pas d'effet significatif sur sa popularit
 H1 : La durée d'un film (runtime) a un effet significatif sur sa popularité.
 
 ```{r}
-imp <- as.data.frame(importance(model_rf))
+imp <- as.data.frame(importance(model_rf_rent))
 imp$Variable <- rownames(imp)
 
 ggplot(imp, aes(x = reorder(Variable, `%IncMSE`), y = `%IncMSE`)) +
